@@ -7,6 +7,7 @@
 #include <vector>
 #include <utility>
 #include <limits>
+#include <map>
 
 // Types for IDs
 using StopID = long int;
@@ -160,6 +161,8 @@ public:
 
 private:
     // Add stuff needed for your class implementation here
+    std::map<StopID,std::pair<Name,Coord>> stop_name_coord;
+    std::vector<StopID> final_stops;
 
 };
 

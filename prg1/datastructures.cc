@@ -1,7 +1,14 @@
 // Datastructures.cc
 
 #include "datastructures.hh"
+<<<<<<< HEAD
 
+#include <random>
+#include <cmath>
+#include <stdexcept>
+
+
+#include <iostream>
 #include <random>
 #include <cmath>
 #include <stdexcept>
@@ -37,7 +44,7 @@ Datastructures::~Datastructures()
 int Datastructures::stop_count()
 {
     // Replace this comment and the line below with your implementation
-    return NO_VALUE;
+    return stop_name_coord.size();
 }
 
 void Datastructures::clear_all()
@@ -48,25 +55,56 @@ void Datastructures::clear_all()
 std::vector<StopID> Datastructures::all_stops()
 {
     // Replace this comment and the line below with your implementation
-    return {NO_STOP};
+    std::vector<StopID> stops;
+
+    for (const auto& element : stop_name_coord) {
+        stops.push_back(element.first);
+     }
+
+    final_stops = stops;
+    return final_stops;
 }
 
 bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
 {
     // Replace this comment and the line below with your implementation
-    return false;
+
+    std::map<StopID,std::pair<Name,Coord>>::iterator it = stop_name_coord.find(id);
+    if (it == stop_name_coord.end()) {
+
+        stop_name_coord.insert(std::make_pair(id,std::make_pair(name,xy)));
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 Name Datastructures::get_stop_name(StopID id)
 {
     // Replace this comment and the line below with your implementation
-    return NO_NAME;
+    std::map<StopID,std::pair<Name,Coord>>::iterator it = stop_name_coord.find(id);
+    if (it == stop_name_coord.end()) {
+        return NO_NAME;
+    } else {
+        Name stop_name = stop_name_coord[id].first;
+        return stop_name;
+    }
 }
 
 Coord Datastructures::get_stop_coord(StopID id)
 {
     // Replace this comment and the line below with your implementation
-    return NO_COORD;
+    std::map<StopID,std::pair<Name,Coord>>::iterator it = stop_name_coord.find(id);
+    if (it == stop_name_coord.end()) {
+        return NO_COORD;
+
+    }
+    else {
+        Coord stop_coord = stop_name_coord[id].second;
+        return stop_coord;
+
+    }
 }
 
 std::vector<StopID> Datastructures::stops_alphabetically()
