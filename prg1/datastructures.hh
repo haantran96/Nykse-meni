@@ -31,6 +31,7 @@ struct Coord
     int y = NO_VALUE;
 };
 
+
 // Example: Defining == and hash function for Coord so that it can be used
 // as key for std::unordered_map/set, if needed
 inline bool operator==(Coord c1, Coord c2) { return c1.x == c2.x && c1.y == c2.y; }
@@ -161,8 +162,48 @@ public:
 
 private:
     // Add stuff needed for your class implementation here
-    std::map<StopID,std::pair<Name,Coord>> stop_name_coord;
-    std::vector<StopID> final_stops;
+    struct BusStop {
+        Name name;
+        Coord coord;
+    };
+
+    std::map<StopID,BusStop> stop_name_coord;
+
+    struct CoordStop {
+        double dist;
+        int y;
+        StopID stopid;
+        bool operator<(const CoordStop& rhs) const {
+                return std::tie(dist, y) < std::tie(rhs.dist, rhs.y);
+            }
+    };
+
+    struct RegionNode {
+        struct RegionNode *child;
+        struct RegionNode *next;
+        RegionID regionId;
+        Name regionName;
+        RegionNode *find_node( RegionNode *from, RegionID id){
+          if (from==NULL) return NULL;
+          if (from->regionId==id) return from;
+          // first we'll recurse on the siblings
+          RegionNode *found;
+          found=find_node(from->next,id);
+          if (found != NULL ) return found;
+          // if not found we recurse on the children
+          return find_node(from->child, id);
+        }
+
+    };
+
+    struct Region {
+        Name name;
+        std::vector<Region> *subRegions;
+        std::vector<BusStop> busStops;
+    };
+
+    std::map<RegionID,Region> regions;
+
 
 };
 
