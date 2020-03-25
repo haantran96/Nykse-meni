@@ -8,7 +8,9 @@
 #include <utility>
 #include <limits>
 #include <map>
-
+#include <iostream>
+#include <algorithm>
+#include <unordered_map>
 // Types for IDs
 using StopID = long int;
 using RegionID = std::string;
@@ -162,12 +164,19 @@ public:
 
 private:
     // Add stuff needed for your class implementation here
+    struct Region {
+        Name regionName;
+        RegionID regionId;
+        std::vector<StopID>stops;
+    };
+
     struct BusStop {
         Name name;
         Coord coord;
+        std::vector<RegionID> main_region;
     };
 
-    std::map<StopID,BusStop> stop_name_coord;
+    std::unordered_map<StopID,BusStop> stop_name_coord;
 
     struct CoordStop {
         double dist;
@@ -178,31 +187,105 @@ private:
             }
     };
 
+
     struct RegionNode {
-        struct RegionNode *child;
-        struct RegionNode *next;
-        RegionID regionId;
-        Name regionName;
-        RegionNode *find_node( RegionNode *from, RegionID id){
-          if (from==NULL) return NULL;
-          if (from->regionId==id) return from;
-          // first we'll recurse on the siblings
-          RegionNode *found;
-          found=find_node(from->next,id);
-          if (found != NULL ) return found;
-          // if not found we recurse on the children
-          return find_node(from->child, id);
+        Region region;
+        RegionNode *child;
+        RegionNode *next;
+        RegionNode *parent;
+    };
+
+
+    RegionNode *root;
+
+    RegionNode *newNode (Region region){
+        RegionNode *node = new RegionNode();
+        node->region = region;
+        node->child =  NULL;
+        node->next = NULL;
+        node->parent = NULL;
+        return node;
+      };
+
+    RegionNode* findRegion(RegionNode* node, RegionID id) {
+        if (node == NULL) {
+            return node;
+        }
+        if (node->region.regionId == id)
+            return node;
+        RegionNode* res1 = findRegion(node->next, id);
+        if (res1 != NULL)
+            return res1;
+        RegionNode* res2 = findRegion(node->child, id);
+        return res2;
+    }
+
+    RegionNode* addSibling(RegionNode * node, RegionNode* sibling)
+    {
+        if (node == NULL)
+            return NULL;
+
+        while (node->next)
+            node = node->next;
+
+        return (node->next = sibling);
+    }
+
+    // Add child Node to a Node
+    RegionNode* addChild(RegionNode* &node, RegionNode* child)
+    {
+    if (node == NULL)
+        return NULL;
+    if (node->child) {
+        std::cout << "Add sibling " << child->region.regionId << std::endl;
+        return addSibling(node->child, child);
+    }
+    else {
+        std::cout << "add child " << child->region.regionId << std::endl;
+        return (node->child = child);
         }
 
-    };
+    }
 
-    struct Region {
-        Name name;
-        std::vector<Region> *subRegions;
-        std::vector<BusStop> busStops;
-    };
+    void traverseTree(RegionNode * root)
+    {
 
-    std::map<RegionID,Region> regions;
+        if (root == NULL)
+            return;
+
+        while (root)
+        {
+            std::cout << " " << root->region.regionId;
+            if (root->child)
+                traverseTree(root->child);
+            root = root->next;
+        }
+    }
+
+    std::vector<RegionID> findParents(RegionNode *root, StopID id)
+    {
+      /* base cases */
+      std::vector<RegionID> st;
+      if (root == NULL)
+         return st;
+      while (1) {
+        std::vector<StopID> v = root->region.stops;
+        if (std::find(v.begin(),v.end(),id) == v.end()) {
+            st.push_back(root->region.regionId);
+            root = root->child;
+        } else {
+            st.push_back(root->region.regionId);
+            break;
+            }
+
+        root = root->next;
+        }
+      return st;
+    }
+
+
+    std::unordered_map<RegionID,Region> regions;
+    //std::map<RegionID,Region> regions;
 
 
 };
