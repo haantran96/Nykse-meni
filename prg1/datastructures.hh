@@ -10,7 +10,12 @@
 #include <map>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 #include <unordered_map>
+#include<bits/stdc++.h>
+
+
+using namespace std;
 // Types for IDs
 using StopID = long int;
 using RegionID = std::string;
@@ -165,127 +170,94 @@ public:
 private:
     // Add stuff needed for your class implementation here
     struct Region {
-        Name regionName;
         RegionID regionId;
+        Name regionName;
         std::vector<StopID>stops;
+    };
+    struct RegionNode {
+        RegionID regionId;
+        Name regionName;
+        std::vector<StopID>stops;
+        RegionNode *child;
+        RegionNode *next;
+        RegionNode *prev;
+        RegionNode *parent;
     };
 
     struct BusStop {
         Name name;
         Coord coord;
-        std::vector<RegionID> main_region;
-    };
-
-    std::unordered_map<StopID,BusStop> stop_name_coord;
-
-    struct CoordStop {
         double dist;
-        int y;
-        StopID stopid;
-        bool operator<(const CoordStop& rhs) const {
-                return std::tie(dist, y) < std::tie(rhs.dist, rhs.y);
-            }
+        RegionNode* main_region;
     };
 
+    std::unordered_map<StopID,BusStop> stops;
+    std::vector<StopID> stop_alphabetical;
+    std::vector<StopID> stop_coord;
 
-    struct RegionNode {
-        Region region;
-        RegionNode *child;
-        RegionNode *next;
-        RegionNode *parent;
-    };
+    std::vector<RegionID>allRegions;
+    std::unordered_map<RegionID,RegionNode*> regions;
+
+    bool sortByName(const StopID &lhs, const StopID &rhs) { return stops[lhs].name < stops[rhs].name; }
+
+    bool sortByCoord(const StopID &lhs, const StopID &rhs) {
+        if (stops[lhs].dist < stops[rhs].dist) {return true;}
+        else if (stops[lhs].dist > stops[rhs].dist) {return false;}
+        else {return stops[lhs].coord.y < stops[rhs].coord.y; }
+    }
+
+    bool sortByDistance(const StopID &lhs, const StopID &rhs, Coord xy) {
+        double dist1 = pow(stops[lhs].coord.x - xy.x,2) + pow(stops[lhs].coord.y - xy.y,2);
+        double dist2 = pow(stops[rhs].coord.x - xy.x,2) + pow(stops[rhs].coord.y - xy.y,2);
+        if (dist1 <= dist2)  {return true;}
+        else {return false;}
+    }
 
 
-    RegionNode *root;
-
-    RegionNode *newNode (Region region){
-        RegionNode *node = new RegionNode();
-        node->region = region;
+    bool sorted_coord = false;
+    RegionNode *newNode (RegionID regionID, Name regionName){
+        RegionNode* node = new RegionNode();
+        node->regionId = regionID;
+        node->regionName = regionName;
+        node->stops = {};
         node->child =  NULL;
         node->next = NULL;
+        node->prev = NULL;
         node->parent = NULL;
         return node;
       };
 
-    RegionNode* findRegion(RegionNode* node, RegionID id) {
-        if (node == NULL) {
-            return node;
-        }
-        if (node->region.regionId == id)
-            return node;
-        RegionNode* res1 = findRegion(node->next, id);
-        if (res1 != NULL)
-            return res1;
-        RegionNode* res2 = findRegion(node->child, id);
-        return res2;
-    }
 
-    RegionNode* addSibling(RegionNode * node, RegionNode* sibling)
+    void traverseTree(RegionNode * root,std::vector<int>&x_coord,std::vector<int>&y_coord)
     {
-        if (node == NULL)
-            return NULL;
-
-        while (node->next)
-            node = node->next;
-
-        return (node->next = sibling);
-    }
-
-    // Add child Node to a Node
-    RegionNode* addChild(RegionNode* &node, RegionNode* child)
-    {
-    if (node == NULL)
-        return NULL;
-    if (node->child) {
-        std::cout << "Add sibling " << child->region.regionId << std::endl;
-        return addSibling(node->child, child);
-    }
-    else {
-        std::cout << "add child " << child->region.regionId << std::endl;
-        return (node->child = child);
-        }
-
-    }
-
-    void traverseTree(RegionNode * root)
-    {
-
         if (root == NULL)
             return;
+        while (root->prev) {
+            root = root->prev;
+            std::cout << "prev" << std::endl;
+        }
 
-        while (root)
+        std::stack<RegionNode*> s;
+        s.push(root);
+        while (!s.empty())
         {
-            std::cout << " " << root->region.regionId;
-            if (root->child)
-                traverseTree(root->child);
-            root = root->next;
-        }
-    }
-
-    std::vector<RegionID> findParents(RegionNode *root, StopID id)
-    {
-      /* base cases */
-      std::vector<RegionID> st;
-      if (root == NULL)
-         return st;
-      while (1) {
-        std::vector<StopID> v = root->region.stops;
-        if (std::find(v.begin(),v.end(),id) == v.end()) {
-            st.push_back(root->region.regionId);
-            root = root->child;
-        } else {
-            st.push_back(root->region.regionId);
-            break;
+            RegionNode* top = s.top();
+            std::vector<StopID> temp = top->stops;
+            if (temp.size() >0 ){
+                for (auto s:temp) {
+                    std::cout << stops[s].main_region->regionName << " " << stops[s].coord.x <<" "<< stops[s].coord.y << std::endl;
+                    x_coord.push_back(stops[s].coord.x);
+                    y_coord.push_back(stops[s].coord.y);
+                }
             }
-
-        root = root->next;
+            s.pop();
+            if (top->next) {
+                s.push(top->next);
+            }
+            if (top->child)
+                s.push(top->child);
         }
-      return st;
     }
-
-
-    std::unordered_map<RegionID,Region> regions;
-    //std::map<RegionID,Region> regions;
 
 
 };
