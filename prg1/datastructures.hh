@@ -13,7 +13,7 @@
 #include <cmath>
 #include <unordered_map>
 #include<bits/stdc++.h>
-
+#include <functional>
 
 using namespace std;
 // Types for IDs
@@ -169,11 +169,6 @@ public:
 
 private:
     // Add stuff needed for your class implementation here
-    struct Region {
-        RegionID regionId;
-        Name regionName;
-        std::vector<StopID>stops;
-    };
     struct RegionNode {
         RegionID regionId;
         Name regionName;
@@ -189,32 +184,26 @@ private:
         Coord coord;
         double dist;
         RegionNode* main_region;
+
+    };
+
+    struct Coords {
+        Coord xy;
+        double dist;
+        StopID id;
     };
 
     std::unordered_map<StopID,BusStop> stops;
+    std::vector<StopID> new_stop_coord;
+    std::vector<StopID> new_stop_name;
+    std::vector<StopID> all_stop;
     std::vector<StopID> stop_alphabetical;
     std::vector<StopID> stop_coord;
+    std::vector<Name>stop_names;
 
     std::vector<RegionID>allRegions;
     std::unordered_map<RegionID,RegionNode*> regions;
 
-    bool sortByName(const StopID &lhs, const StopID &rhs) { return stops[lhs].name < stops[rhs].name; }
-
-    bool sortByCoord(const StopID &lhs, const StopID &rhs) {
-        if (stops[lhs].dist < stops[rhs].dist) {return true;}
-        else if (stops[lhs].dist > stops[rhs].dist) {return false;}
-        else {return stops[lhs].coord.y < stops[rhs].coord.y; }
-    }
-
-    bool sortByDistance(const StopID &lhs, const StopID &rhs, Coord xy) {
-        double dist1 = pow(stops[lhs].coord.x - xy.x,2) + pow(stops[lhs].coord.y - xy.y,2);
-        double dist2 = pow(stops[rhs].coord.x - xy.x,2) + pow(stops[rhs].coord.y - xy.y,2);
-        if (dist1 <= dist2)  {return true;}
-        else {return false;}
-    }
-
-
-    bool sorted_coord = false;
     RegionNode *newNode (RegionID regionID, Name regionName){
         RegionNode* node = new RegionNode();
         node->regionId = regionID;
@@ -225,7 +214,7 @@ private:
         node->prev = NULL;
         node->parent = NULL;
         return node;
-      };
+      }
 
 
     void traverseTree(RegionNode * root,std::vector<int>&x_coord,std::vector<int>&y_coord)
@@ -234,7 +223,6 @@ private:
             return;
         while (root->prev) {
             root = root->prev;
-            std::cout << "prev" << std::endl;
         }
 
         std::stack<RegionNode*> s;
@@ -243,9 +231,9 @@ private:
         {
             RegionNode* top = s.top();
             std::vector<StopID> temp = top->stops;
+
             if (temp.size() >0 ){
                 for (auto s:temp) {
-                    std::cout << stops[s].main_region->regionName << " " << stops[s].coord.x <<" "<< stops[s].coord.y << std::endl;
                     x_coord.push_back(stops[s].coord.x);
                     y_coord.push_back(stops[s].coord.y);
                 }
@@ -259,6 +247,63 @@ private:
         }
     }
 
+    bool sortByCoord(const StopID &lhs, const StopID &rhs) {
+        if (stops[lhs].dist < stops[rhs].dist) {return true;}
+        else if (stops[lhs].dist > stops[rhs].dist) {return false;}
+        else {return stops[lhs].coord.y < stops[rhs].coord.y; }
+    }
+
+    bool sortByName(const StopID &lhs, const StopID &rhs) { return stops[lhs].name < stops[rhs].name; }
+
+    bool sortByDistance(const StopID &lhs, const StopID &rhs, Coord xy) {
+        double dist1 = pow(stops[lhs].coord.x - xy.x,2) + pow(stops[lhs].coord.y - xy.y,2);
+        double dist2 = pow(stops[rhs].coord.x - xy.x,2) + pow(stops[rhs].coord.y - xy.y,2);
+        if (dist1 <= dist2)  {return true;}
+        else {return false;}
+    }
+
+
+    bool coord_operator(const Coords &lhs, const Coords &rhs) {
+        if (lhs.dist < lhs.dist) {return true;}
+        else if (lhs.dist > rhs.dist) {return false;}
+        else {return lhs.xy.y < rhs.xy.y; }
+    }
+
+    std::vector<StopID> mergeSort(std::vector<StopID>&v1, std::vector<StopID>&v2, bool(Datastructures::*func)(const StopID&,const StopID&)) {
+        std::vector<StopID> stops;
+        int n1 = int(v1.size());
+        int n2 = int(v2.size());
+        int i=0;
+        int j=0;
+        while (i<n1 && j < n2) {
+            if ((this->*func)(v1[i],v2[j])) {
+                stops.push_back(v1[i]);
+                i++;
+            }
+            else {
+                stops.push_back(v2[j]);
+                j++;
+            }
+        }
+
+        while (i<n1) {
+            stops.push_back(v1[i]);
+            i++;
+        }
+        while (j <n2) {
+            stops.push_back(v2[j]);
+            j++;
+        }
+        return stops;
+    }
+
+
+    Coords minCoord = {{},{},-999};
+    Coords maxCoord = {{},{},-999};
+    std::multimap<Name,StopID>name_stop;
+    bool creation_finish = false;
+    bool sorted_coord = true;
+    bool sorted_name = true;
 
 };
 

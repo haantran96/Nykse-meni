@@ -10,6 +10,7 @@
 #include <iostream>
 #include <random>
 #include <cmath>
+#include <functional>
 #include <stdexcept>
 std::minstd_rand rand_engine; // Reasonably quick pseudo-random generator
 
@@ -36,12 +37,6 @@ Datastructures::Datastructures()
 Datastructures::~Datastructures()
 {
     // Replace this comment with your implementation
-    stops.clear();
-    regions.clear();
-    allRegions.clear();
-    stop_alphabetical.clear();
-    stop_coord.clear();
-    sorted_coord = false;
 }
 
 int Datastructures::stop_count()
@@ -56,16 +51,21 @@ void Datastructures::clear_all()
     stops.clear();
     regions.clear();
     allRegions.clear();
-    stop_alphabetical.clear();
-    stop_coord.clear();
+    all_stop.clear();
     sorted_coord = false;
+    sorted_name = false;
+    if (new_stop_coord.size()>0)
+        new_stop_coord.clear();
+    if (new_stop_name.size() >0)
+        new_stop_name.clear();
+    stop_names.clear();
 
 }
 
 std::vector<StopID> Datastructures::all_stops()
 {
     // Replace this comment and the line below with your implementation
-    return stop_alphabetical;
+    return all_stop;
 }
 
 bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
@@ -73,12 +73,31 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
     // Replace this comment and the line below with your implementation
     double dist = pow(xy.x,2)+pow(xy.y,2);
     if (stops.find(id) == stops.end()) {
-
         stops[id].name = name;
         stops[id].coord = xy;
         stops[id].dist = dist;
-        stop_alphabetical.push_back(id);
-        stop_coord.push_back(id);
+        all_stop.push_back(id);
+        new_stop_name.push_back(id);
+        new_stop_coord.push_back(id);
+        stop_names.push_back(name);
+        Coords stop = {xy,dist,id};
+        if (minCoord.id == -999)
+            minCoord = stop;
+         else {
+            if( coord_operator(stop,minCoord)) {
+                minCoord = stop;
+            }
+        }
+        if (maxCoord.id == -999)
+            maxCoord = stop;
+         else {
+            if( coord_operator(maxCoord,stop)) {
+                maxCoord = stop;
+            }
+        }
+
+        name_stop.insert(std::pair<Name,StopID>(name,id));
+
         return true;
     }
     else {
@@ -113,8 +132,50 @@ std::vector<StopID> Datastructures::stops_alphabetically()
     if (stop_count() == 0)
         return {NO_STOP};
     else {
-    std::sort(stop_alphabetical.begin(),stop_alphabetical.end(),[this] (StopID lhs, StopID rhs) { return sortByName(lhs, rhs); });
-    return stop_alphabetical;}
+//        if (!sorted_name && stop_alphabetical.size() > 0) {
+//            std::sort(stop_alphabetical.begin(),stop_alphabetical.end(),
+//                      [this] (StopID lhs, StopID rhs) { return sortByName(lhs, rhs); });
+//            sorted_name = true;
+//        }
+
+
+//        if (new_stop_name.size() >0) {
+//            if (new_stop_name.size() <= 300000)
+//                std::sort(new_stop_name.begin(),new_stop_name.end(),[this] (StopID lhs, StopID rhs) { return sortByName(lhs, rhs); });
+//            else {
+//                std::vector<StopID> v1, v2;
+//                v1 = std::vector<StopID>(new_stop_name.begin(),new_stop_name.begin()+int(new_stop_name.size() /2));
+//                v2 = std::vector<StopID>(new_stop_name.begin()+int(new_stop_name.size() /2),new_stop_name.end());
+//                std::sort(v1.begin(),v1.end(),
+//                          [this] (StopID lhs, StopID rhs) { return sortByName(lhs, rhs); });
+//                std::sort(v2.begin(),v2.end(),
+//                          [this] (StopID lhs, StopID rhs) { return sortByName(lhs, rhs); });
+
+//                new_stop_name = mergeSort(new_stop_name,stop_alphabetical,&Datastructures::sortByName);
+//                v1.clear();
+//                v2.clear();
+//            }
+//            if (stop_alphabetical.size() == 0){
+//                stop_alphabetical = new_stop_name;
+//                new_stop_name.clear();
+//                return stop_alphabetical;
+//            }
+
+
+//            std::vector<StopID> stops = mergeSort(new_stop_name,stop_alphabetical,&Datastructures::sortByName);
+//            new_stop_name.clear();
+//            stop_alphabetical = stops;
+//            return stop_alphabetical;
+//        } else {
+//            return stop_alphabetical;
+//        }
+        std::vector<StopID> stops;
+        for (multimap<Name,StopID>::iterator it= name_stop.begin(); it != name_stop.end(); ++it){
+            stops.push_back(it->second);
+        }
+        stop_alphabetical = stops;
+        return stops;
+    }
 }
 std::vector<StopID> Datastructures::stops_coord_order()
 {
@@ -122,46 +183,100 @@ std::vector<StopID> Datastructures::stops_coord_order()
     if (stop_count() == 0)
         return {NO_STOP};
     else {
-        if (!sorted_coord)
-            std::sort(stop_coord.begin(),stop_coord.end(),[this] (StopID lhs, StopID rhs) { return sortByCoord(lhs, rhs); });
-        return stop_coord;}
+        if (!sorted_coord && stop_coord.size() > 0) {
+            std::sort(stop_coord.begin(),stop_coord.end(),
+                      [this] (StopID lhs, StopID rhs) { return sortByCoord(lhs, rhs); });
+            sorted_coord = true;
+        }
+
+        if (new_stop_coord.size() >0) {
+            std::sort(new_stop_coord.begin(),new_stop_coord.end(),
+                      [this] (StopID lhs, StopID rhs) { return sortByCoord(lhs, rhs); });
+            if (stop_coord.size() == 0){
+                stop_coord = new_stop_coord;
+                new_stop_coord.clear();
+
+                return stop_coord;
+            }
+            std::vector<StopID> stops = mergeSort(new_stop_coord,stop_coord,&Datastructures::sortByCoord);
+
+            new_stop_coord.clear();
+            stop_coord = stops;
+            return stop_coord;
+        } else {
+            return stop_coord;
+        }
+    }
 }
 
 StopID Datastructures::min_coord()
 {
     // Replace this comment and the line below with your implementation
-    if (stop_count() == 0)
-    {
-        return NO_STOP;
-    } else {
-        if (!sorted_coord)
-            std::sort(stop_coord.begin(),stop_coord.end(),[this] (StopID lhs, StopID rhs) { return sortByCoord(lhs, rhs); });
-        return (*stop_coord.begin());
-    }
+    return minCoord.id;
 }
 
 StopID Datastructures::max_coord()
 {
     // Replace this comment and the line below with your implementation
-    if (stop_count() == 0)
-    {
-        return NO_STOP;
-    } else {
-        if (!sorted_coord)
-            std::sort(stop_coord.begin(),stop_coord.end(),[this] (StopID lhs, StopID rhs) { return sortByCoord(lhs, rhs); });
-        return (*(stop_coord.end()-1));
-    }
+    return maxCoord.id;
 }
 
 std::vector<StopID> Datastructures::find_stops(Name const& name)
 {
     // Replace this comment and the line below with your implementation
     std::vector<StopID> foundStops;
-    for (auto& element: stops) {
-        if(element.second.name == name) {
-            foundStops.push_back(element.first);
-        }
+//    for (auto& element: stops) {
+//        if(element.second.name == name) {
+//            foundStops.push_back(element.first);
+//        }
+//    }
+
+//    if (new_stop_name.size()>0)
+//         stops_alphabetically();
+
+//    int l = 0;
+//    int r = int(stop_alphabetical.size())-1;
+//    int mid = -1;
+//    while (l <= r)
+//    {
+//        int m = l + (r-l)/2;
+
+//      if (stops[stop_alphabetical.at(m)].name == name) {
+//          foundStops.push_back(stop_alphabetical.at(m));
+//          mid = m;
+//          break;
+//      }
+//      // If x greater, ignore left half
+//      if (stops[stop_alphabetical.at(m)].name < name)
+//          l = m + 1;
+
+//      // If x is smaller, ignore right half
+//      else
+//           r = m - 1;
+//    }
+
+//    if (mid == -1) {
+//        return foundStops;
+//    }
+
+//    int midLeft = mid -1;
+//    int midRight = mid+1;
+
+//    while (midLeft >=0 && stops[stop_alphabetical.at(midLeft)].name == name) {
+//        foundStops.push_back(stop_alphabetical.at(midLeft));
+//            midLeft --;
+//    }
+//    while (midRight < int(stop_alphabetical.size()) && stops[stop_alphabetical.at(midRight)].name == name ) {
+//            foundStops.push_back(stop_alphabetical.at(midRight));
+//            midRight++;
+//    }
+
+    std::pair <std::multimap<Name,StopID>::iterator, std::multimap<Name,StopID>::iterator> ret;
+    ret = name_stop.equal_range(name);
+    for (std::multimap<Name,StopID>::iterator it=ret.first; it!=ret.second; ++it) {
+        foundStops.push_back(it->second);
     }
+
     return foundStops;
 }
 
@@ -172,6 +287,9 @@ bool Datastructures::change_stop_name(StopID id, const Name& newname)
         return false;
     } else {
         stops.find(id)->second.name = newname;
+        if (std::find(stop_alphabetical.begin(),stop_alphabetical.end(),id) != stop_alphabetical.end())
+            sorted_name = false;
+
         return true;
     }
 }
@@ -185,7 +303,14 @@ bool Datastructures::change_stop_coord(StopID id, Coord newcoord)
     } else {
         stops.find(id)->second.coord = newcoord;
         stops.find(id)->second.dist = pow(newcoord.x,2)+pow(newcoord.y,2);
-        sorted_coord = false;
+        if (std::find(stop_coord.begin(),stop_coord.end(),id) != stop_coord.end())
+            sorted_coord = false;
+
+        Coords new_stop = {newcoord,pow(newcoord.x,2)+pow(newcoord.y,2),id};
+        if (coord_operator(new_stop,minCoord))
+            minCoord = new_stop;
+        if (coord_operator(maxCoord,new_stop))
+            maxCoord = new_stop;
         return true;
     }
 }
@@ -231,7 +356,6 @@ bool Datastructures::add_stop_to_region(StopID id, RegionID parentid)
         return false;
         }
     }
-
 
 
 bool Datastructures::add_subregion_to_region(RegionID id, RegionID parentid)
@@ -305,8 +429,6 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
         std::vector<StopID> temp = found->stops;
         if (temp.size() >0 ){
             for (auto s:temp) {
-                std::cout << stops[s].main_region->regionName << " " << stops[s].coord.x <<" "<< stops[s].coord.y << std::endl;
-
                 x_coord.push_back(stops[s].coord.x);
                 y_coord.push_back(stops[s].coord.y);
             }
@@ -316,6 +438,7 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
         if (x_coord.size() == 0 ) {
             return {NO_COORD, NO_COORD};
         } else {
+
             auto x_ = std::minmax_element (x_coord.begin(),x_coord.end());
             auto y_ = std::minmax_element (y_coord.begin(), y_coord.end());
             bottomLeft.x = *x_.first;
@@ -337,7 +460,7 @@ std::vector<StopID> Datastructures::stops_closest_to(StopID id)
         return {NO_STOP};
     else {
         Coord xy = it->second.coord;
-        std::vector<StopID> stop_distance  = stop_coord;
+        std::vector<StopID> stop_distance  = all_stop;
         std::sort(stop_distance.begin(),stop_distance.end(),[this,xy] (StopID lhs, StopID rhs) { return sortByDistance(lhs, rhs, xy); });
 
         return {stop_distance.begin()+1,stop_distance.begin()+6};
@@ -352,13 +475,26 @@ bool Datastructures::remove_stop(StopID id)
     if (it == stops.end()) {
         return false;
     } else {
-        RegionNode* node = stops[id].main_region;
-        auto it_ = std::find(regions[node->regionId]->stops.begin(),
-                            regions[node->regionId]->stops.end(),id);
-        regions[node->regionId]->stops.erase(it_);
+        std::vector<StopID>& v = regions[stops[id].main_region->regionId]->stops;
+        v.erase(std::remove(v.begin(),v.end(),id),v.end());
+
         stops.erase(id);
-        stop_alphabetical.erase(std::find(stop_alphabetical.begin(),stop_alphabetical.end(), id));
-        stop_coord.erase(std::find(stop_coord.begin(),stop_coord.end(), id));
+        all_stop.erase(std::remove(all_stop.begin(),all_stop.end(), id),all_stop.end());
+        if (creation_finish){
+            stop_coord.erase(std::remove(stop_coord.begin(),stop_coord.end(), id),stop_coord.end());
+            stop_alphabetical.erase(std::remove(stop_alphabetical.begin(),stop_alphabetical.end(), id),stop_alphabetical.end());
+            return true;
+        }
+        if (std::find(new_stop_coord.begin(),new_stop_coord.end(), id) != new_stop_coord.end())
+            stop_coord.erase(std::remove(stop_coord.begin(),stop_coord.end(), id),stop_coord.end());
+        else
+            new_stop_coord.erase(std::remove(new_stop_coord.begin(),new_stop_coord.end(), id),new_stop_coord.end());
+
+        if (std::find(stop_alphabetical.begin(),stop_alphabetical.end(), id) != stop_alphabetical.end())
+            stop_alphabetical.erase(std::remove(stop_alphabetical.begin(),stop_alphabetical.end(), id),stop_alphabetical.end());
+        else
+            new_stop_name.erase(std::remove(new_stop_name.begin(),new_stop_name.end(), id),new_stop_name.end());
+
         return true;
     }
 }
