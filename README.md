@@ -32,7 +32,8 @@
     
     std::vector<StopID> stop_coord;
     std::vector<StopID> new_stop_coord;
-        -> Stop Ids in sorted order (based on coordinates) and of newly inserted stops. Instead of sorting all stops, I save the already sorted stops in 1 vector and only sort the newly inserted stops.
+        -> Stop Ids in sorted order (based on coordinates) and of newly inserted stops. 
+        -> Instead of sorting all stops, I save the already sorted stops in 1 vector and only sort the newly inserted stops.
         -> By this, we can save some time on the already sorted elements, which works a lot of stops are added (in the perftest-sorting function)
         -> After sorting, new_stop_coord vector is cleared to empty again.
     
@@ -98,8 +99,10 @@
         
     StopID min_coord(), max_coord : O(n)
         + If new_stop_coord.size() = 0 (the coordinates are sorted): return first/last values of coord_stop -> O(1) 
-        + Otherwise, find min/max distance to origin in the multimap (first/last element) -> O(1). Then search for elements with the same distance in the multimap with equal_range -> O(logn)
-        + Iterate through the found iterators to the elements, compare the y coordinates between the found elements and get the ones with min/max y -> O(m) where m is the number of StopIDs with the same distance.
+        + Otherwise, find min/max distance to origin in the multimap (first/last element) -> O(1). 
+        + Then search for elements with the same distance in the multimap with equal_range -> O(logn)
+        + Iterate through the found iterators to the elements, compare the y coordinates between the found elements and get the ones with min/max y 
+            -> O(m) where m is the number of StopIDs with the same distance.
         + Compare the min/max element of coord_stop and new_coord_stop.
         
     std::vector<StopID> find_stops(Name const& name): O(logn+m) where m is the number of stops with the same name -> Overall O(n)
@@ -134,7 +137,8 @@
         + Check if subregion and region are existed: O(1) on average
         + Insert parent-child relationship to the regions. Two cases:
             + If the parent region doesn't have a child -> O(1)
-            + If the parent region already have child/children -> Traverse through all the children and push the subregion to the last -> O(n) with n is the number of children of the region
+            + If the parent region already have child/children 
+                -> Traverse through all the children and push the subregion to the last -> O(n) with n is the number of children of the region
             
     std::vector<RegionID> stop_regions(StopID id): O(n)
         + Find the main_region from the StopID -> O(1)
