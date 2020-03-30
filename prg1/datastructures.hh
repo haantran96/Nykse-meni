@@ -169,42 +169,42 @@ public:
     RegionID stops_common_region(StopID id1, StopID id2);
 
 private:
-    // Add stuff needed for your class implementation here
+    // Region's information. This is similar to sibling-child tree representation, but adding parent node
     struct RegionNode {
         RegionID regionId;
         Name regionName;
         std::vector<StopID>stops;
-        RegionNode *child;
-        RegionNode *next;
-        RegionNode *prev;
-        RegionNode *parent;
+        RegionNode *child; //child node
+        RegionNode *next;  //next sibling
+        RegionNode *prev;  //previous sibling
+        RegionNode *parent; //parent node
     };
 
+
+    // Stop's information
     struct BusStop {
         StopID id;
         Name name;
         Coord coord;
-        double dist;
-        RegionNode* main_region;
+        double dist; //distance to origin (0,0)
+        RegionNode* main_region; //direct region that contains the stop
 
     };
 
 
-    std::multimap<Name,StopID>name_stop;
-    std::multimap<double,StopID>new_coord;
+    std::multimap<Name,StopID>name_stop; // keep name sorted
+    std::multimap<double,StopID>new_coord; //keep distance sorted
     std::unordered_map<StopID,BusStop> stops;
-    std::vector<StopID> new_stop_coord;
+    std::vector<StopID> new_stop_coord; //newly inserted stops. removed after sorted
     std::vector<StopID> all_stop;
     std::vector<StopID> stop_coord;
     std::vector<RegionID>allRegions;
     std::unordered_map<RegionID,RegionNode*> regions;
 
     bool sorted_coord = true;
-    bool sorted_name = true;
-
-
 
     RegionNode *newNode (RegionID regionID, Name regionName){
+        // Function to create new region node
         RegionNode* node = new RegionNode();
         node->regionId = regionID;
         node->regionName = regionName;
@@ -219,8 +219,11 @@ private:
 
     void traverseTree(RegionNode * root,std::vector<int>&x_coord,std::vector<int>&y_coord)
     {
+        // Traverse to all relevant children of a given root
         if (root == NULL)
             return;
+
+        // This is to make sure that the child node is always the first sibling (prev->NULL)
         while (root->prev) {
             root = root->prev;
         }
@@ -234,6 +237,7 @@ private:
 
             if (temp.size() >0 ){
                 for (auto s:temp) {
+                    // pushing x and y coordinates to vectors
                     x_coord.push_back(stops[s].coord.x);
                     y_coord.push_back(stops[s].coord.y);
                 }
@@ -248,28 +252,28 @@ private:
     }
 
     inline bool sortByCoord(const StopID &lhs, const StopID &rhs) {
+        // sorting by distance to origin
         if (stops[lhs].dist < stops[rhs].dist) {return true;}
         else if (stops[lhs].dist > stops[rhs].dist) {return false;}
-        else {return stops[lhs].coord.y < stops[rhs].coord.y; }
+        else {return stops[lhs].coord.y < stops[rhs].coord.y; } // if equal distance-> sort by y coord
     }
 
-
+    //sorting by name
     inline bool sortByName(const StopID &lhs, const StopID &rhs) { return stops[lhs].name < stops[rhs].name; }
 
     inline bool sortByDistance(const StopID &lhs, const StopID &rhs, Coord xy) {
+        // sorting by distance to another point xy
+
         double dist1 = pow(stops[lhs].coord.x - xy.x,2) + pow(stops[lhs].coord.y - xy.y,2);
         double dist2 = pow(stops[rhs].coord.x - xy.x,2) + pow(stops[rhs].coord.y - xy.y,2);
         if (dist1 < dist2)  {return true;}
         else if (dist1 > dist2) {return false;}
-        else {return stops[lhs].coord.y < stops[rhs].coord.y; }
+        else {return stops[lhs].coord.y < stops[rhs].coord.y; } // if equal distance-> sort by y coord
     }
 
-    inline bool CoordCmp (const BusStop &lhs, const BusStop &rhs) {
-        if (lhs.dist < rhs.dist) {return true;}
-        else if (lhs.dist > rhs.dist) {return false;}
-        else {return lhs.coord.y < rhs.coord.y; }
-    }
     std::vector<StopID> mergeSort(std::vector<StopID>&v1, std::vector<StopID>&v2, bool(Datastructures::*func)(const StopID&,const StopID&)) {
+        // Merging 2 sorted vectors using merge sort algorithm
+
         std::vector<StopID> stops;
         int n1 = int(v1.size());
         int n2 = int(v2.size());
@@ -296,7 +300,6 @@ private:
         }
         return stops;
     }
-
 
 
 };

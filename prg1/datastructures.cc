@@ -70,7 +70,6 @@ std::vector<StopID> Datastructures::all_stops()
 
 bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
 {
-    // Replace this comment and the line below with your implementation
     double dist = pow(xy.x,2)+pow(xy.y,2);
     if (stops.find(id) == stops.end()) {
         stops[id].id = id;
@@ -78,7 +77,7 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
         stops[id].coord = xy;
         stops[id].dist = dist;
         all_stop.push_back(id);
-        new_stop_coord.push_back(id);
+        new_stop_coord.push_back(id); //vector contains new inserted stops
         name_stop.insert(std::pair<Name,StopID>(name,id));
         new_coord.insert(std::pair<double,StopID>(dist,id));
         return true;
@@ -90,7 +89,7 @@ bool Datastructures::add_stop(StopID id, const Name& name, Coord xy)
 
 Name Datastructures::get_stop_name(StopID id)
 {
-    // Replace this comment and the line below with your implementation
+    // Return stop name
     if (stops.find(id) == stops.end()) {
         return NO_NAME;
     } else {
@@ -100,7 +99,7 @@ Name Datastructures::get_stop_name(StopID id)
 
 Coord Datastructures::get_stop_coord(StopID id)
 {
-    // Replace this comment and the line below with your implementation
+    // Return stop coord
     if (stops.find(id) == stops.end()) {
         return NO_COORD;
     }
@@ -111,11 +110,13 @@ Coord Datastructures::get_stop_coord(StopID id)
 
 std::vector<StopID> Datastructures::stops_alphabetically()
 {
-    // Replace this comment and the line below with your implementation
+    // Sort stop by name
+
     if (stop_count() == 0)
         return {};
     else {
         std::vector<StopID> stops;
+        // Insert the value (StopID) of the multimap name_stop (always sorted alphabetically)
         for (multimap<Name,StopID>::iterator it= name_stop.begin(); it != name_stop.end(); ++it){
             stops.push_back(it->second);
         }
@@ -124,29 +125,34 @@ std::vector<StopID> Datastructures::stops_alphabetically()
 }
 std::vector<StopID> Datastructures::stops_coord_order()
 {
-    // Replace this comment and the line below with your implementation
     if (stop_count() == 0)
         return {};
     else {
         if (!sorted_coord && stop_coord.size() > 0) {
+            //Sort the main vector when the stop coordinates are changed
             std::sort(stop_coord.begin(),stop_coord.end(),
                       [this] (StopID lhs, StopID rhs) { return sortByCoord(lhs, rhs); });
             sorted_coord = true;
         }
 
         if (new_stop_coord.size() >0) {
+            // Sort the new inserted vector
             std::sort(new_stop_coord.begin(),new_stop_coord.end(),
                       [this] (StopID lhs, StopID rhs) { return sortByCoord(lhs, rhs); });
             if (stop_coord.size() == 0){
+                // if there is no stop in the main vector, simply assign to the new one.
                 stop_coord = new_stop_coord;
                 new_stop_coord.clear();
-
+                new_coord.clear();
                 return stop_coord;
             }
+
+            // Merge stop_coord and new_stop_coord
             std::vector<StopID> stops = mergeSort(new_stop_coord,stop_coord,&Datastructures::sortByCoord);
 
-            new_stop_coord.clear();
-            stop_coord = stops;
+            new_stop_coord.clear(); // delete after merging
+            new_coord.clear(); // delete after merging
+            stop_coord = stops; // update main vector
             return stop_coord;
         } else {
             return stop_coord;
@@ -156,21 +162,27 @@ std::vector<StopID> Datastructures::stops_coord_order()
 
 StopID Datastructures::min_coord()
 {
-    // Replace this comment and the line below with your implementation
     if (stop_count() == 0)
         return NO_STOP;
     else {
+
+        // If no stop is inserted, return the first element of the main vector
         if (new_stop_coord.size() == 0)
             return (*stop_coord.begin());
         else {
-            double minDist = new_coord.begin()->first;
-            int minY =-1;
-            StopID mincoord;
+
+            // Find the min element in the new inserted stops
+            // new_coord is always sorted by distance, so we just need to find the element
+            // with the min y coordinates
+            double minDist = new_coord.begin()->first; // first element is always smallest
+            int minY =-1; // initialize
+            StopID mincoord; // ID of stop with min coordinates
+
+            // iterate through stops with the same min distance
             auto ret = new_coord.equal_range(minDist);
             for (std::multimap<double,StopID>::iterator it=ret.first; it!=ret.second; ++it) {
                 if (minY == -1) {
                     mincoord = it->second;
-
                     minY = stops[it->second].coord.y;
                 }
                 else if (stops[it->second].coord.y < minY) {
@@ -178,9 +190,9 @@ StopID Datastructures::min_coord()
                     minY = stops[it->second].coord.y;
                 }
             }
-            if (stop_coord.size() == 0)
+            if (stop_coord.size() == 0) //If main vector has no stop, return minCoord
                 return mincoord;
-            if (sortByCoord(mincoord,*stop_coord.begin()))
+            if (sortByCoord(mincoord,*stop_coord.begin())) //else, compare 2 min elements in 2 vectors
                 return mincoord;
             else
                 return (*stop_coord.begin());
@@ -190,16 +202,23 @@ StopID Datastructures::min_coord()
 
 StopID Datastructures::max_coord()
 {
-    // Replace this comment and the line below with your implementation
     if (stop_count() == 0)
         return NO_STOP;
     else {
+
+        // If no stop is inserted, return the last element of the main vector
         if (new_stop_coord.size() == 0)
             return (*(stop_coord.end()-1));
         else {
-            double maxDist = new_coord.rbegin()->first;
-            int maxY =-1;
+
+            // Find the max element in the new inserted stops
+            // new_coord is always sorted by distance, so we just need to find the element
+            // with the max y coordinates
+            double maxDist = new_coord.rbegin()->first; // last element is always largest
+            int maxY =-1; // initialize
             StopID maxcoord;
+
+            // iterate through stops with the same max distance
             auto ret = new_coord.equal_range(maxDist);
             for (auto it=ret.first; it!=ret.second; ++it) {
                 if (maxY == -1) {
@@ -211,10 +230,10 @@ StopID Datastructures::max_coord()
                     maxY = stops[it->second].coord.y;
                 }
             }
-            if (stop_coord.size() == 0)
+            if (stop_coord.size() == 0) //If main vector has no stop, return maxCoord
                 return maxcoord;
 
-            if (sortByCoord(*(stop_coord.end()-1),maxcoord))
+            if (sortByCoord(*(stop_coord.end()-1),maxcoord)) //else, compare 2 max elements in 2 vectors
                 return maxcoord;
             else
                 return (*(stop_coord.end()-1));
@@ -225,7 +244,7 @@ StopID Datastructures::max_coord()
 
 std::vector<StopID> Datastructures::find_stops(Name const& name)
 {
-    // Replace this comment and the line below with your implementation
+    // Find the stop in multimap name_stop using equal range
     std::vector<StopID> foundStops;
     std::pair <std::multimap<Name,StopID>::iterator, std::multimap<Name,StopID>::iterator> ret;
     ret = name_stop.equal_range(name);
@@ -239,17 +258,18 @@ std::vector<StopID> Datastructures::find_stops(Name const& name)
 
 bool Datastructures::change_stop_name(StopID id, const Name& newname)
 {
-    // Replace this comment and the line below with your implementation
-    if (stops.find(id) == stops.end()){
+    if (stops.find(id) == stops.end()){ // if stop doesnt exist
         return false;
     } else {
         Name oldname = stops.find(id)->second.name;
+        stops.find(id)->second.name = newname; // change name in the unordered_map
 
-        stops.find(id)->second.name = newname;
+        // find the stop in multimap name_stop with old name
         std::pair <std::multimap<Name,StopID>::iterator, std::multimap<Name,StopID>::iterator> ret;
         ret = name_stop.equal_range(oldname);
         for (std::multimap<Name,StopID>::iterator it=ret.first; it!=ret.second; ++it) {
             if (it->second == id) {
+                // When found, we erase the element and then insert the new pair (newname,id)
                 it = name_stop.erase(it);
                 name_stop.insert(std::pair<Name,StopID>(newname,id));
                 break;
@@ -261,22 +281,23 @@ bool Datastructures::change_stop_name(StopID id, const Name& newname)
 
 bool Datastructures::change_stop_coord(StopID id, Coord newcoord)
 {
-    // Replace this comment and the line below with your implementation
 
-    if (stops.find(id) == stops.end()){
+    if (stops.find(id) == stops.end()){ // if stop doesnt exist
         return false;
     } else {
         double dist = stops[id].dist;
-        double newdist = pow(newcoord.x,2)+pow(newcoord.y,2);
-        stops.find(id)->second.coord = newcoord;
-        stops.find(id)->second.dist = newdist;
+        double newdist = pow(newcoord.x,2)+pow(newcoord.y,2); //calculate new distance
+        stops.find(id)->second.coord = newcoord; // change coord in the unordered_map
+        stops.find(id)->second.dist = newdist; // change distance in the unordered_map
         auto main_it = std::find(stop_coord.begin(),stop_coord.end(),id);
         if (main_it != stop_coord.end()){
-            sorted_coord = false;
+            sorted_coord = false; // if the coords are changed, the sorted order of the main vector is not preserved anymore.
         }
+        // find the stop in multimap name_stop with old distance
         std::pair <std::multimap<double,StopID>::iterator, std::multimap<double,StopID>::iterator> ret = new_coord.equal_range(dist);
         for (auto it=ret.first; it!=ret.second; ++it) {
             if (it->second == id) {
+                // When found, we erase the element and then insert the new pair (newdist,id)
                 new_coord.erase(it);
                 new_coord.insert(std::pair<double,StopID>(newdist,id));
                 break;
@@ -366,12 +387,11 @@ bool Datastructures::add_subregion_to_region(RegionID id, RegionID parentid)
 
 std::vector<RegionID> Datastructures::stop_regions(StopID id)
 {
-    // Replace this comment and the line below with your implementation
-
-    std::vector<RegionID> st;
-    RegionNode* node = stops[id].main_region;
+    std::vector<RegionID> st; //contains all relevant parent nodes
+    RegionNode* node = stops[id].main_region; //get the node of the direct region
     st.push_back(node->regionId);
     while (node->parent) {
+        // move to parent node until reach NULL
         st.push_back(node->parent->regionId);
         node = node->parent;
     }
@@ -388,7 +408,7 @@ void Datastructures::creation_finished()
 
 std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
 {
-    // Replace this comment and the line below with your implementation
+
     std::vector<int>x_coord;
     std::vector<int>y_coord;
     Coord bottomLeft,topRight;
@@ -396,7 +416,8 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
     if (it == regions.end())
         return {NO_COORD, NO_COORD};
     else {
-        RegionNode* found = it->second;
+        // First, we insert the main region's coordinates
+        RegionNode* found = it->second; //main region
         std::vector<StopID> temp = found->stops;
         if (temp.size() >0 ){
             for (auto s:temp) {
@@ -405,13 +426,14 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
             }
         }
 
-        traverseTree(found->child,x_coord,y_coord);
+        traverseTree(found->child,x_coord,y_coord); // traverse through all main region's children
         if (x_coord.size() == 0 ) {
             return {NO_COORD, NO_COORD};
         } else {
-
+            // Find min and max x,y coords
             auto x_ = std::minmax_element (x_coord.begin(),x_coord.end());
             auto y_ = std::minmax_element (y_coord.begin(), y_coord.end());
+            // Bottom left = (minX,minY), Top right = (maxX,maxY)
             bottomLeft.x = *x_.first;
             bottomLeft.y = *y_.first;
             topRight.x = *x_.second;
@@ -424,7 +446,6 @@ std::pair<Coord,Coord> Datastructures::region_bounding_box(RegionID id)
 
 std::vector<StopID> Datastructures::stops_closest_to(StopID id)
 {
-    // Replace this comment and the line below with your implementation
 
     std::unordered_map<StopID,BusStop>::iterator it = stops.find(id);
     if (it == stops.end())
@@ -432,6 +453,7 @@ std::vector<StopID> Datastructures::stops_closest_to(StopID id)
     else {
         Coord xy = it->second.coord;
         std::vector<StopID> stop_distance  = all_stop;
+        // Sort all stops based on the distance to the given stop
         std::sort(stop_distance.begin(),stop_distance.end(),[this,xy] (StopID lhs, StopID rhs) { return sortByDistance(lhs, rhs, xy); });
         if (stop_distance.size() < 6) {
             return {stop_distance.begin()+1,stop_distance.end()};
@@ -443,17 +465,18 @@ std::vector<StopID> Datastructures::stops_closest_to(StopID id)
 
 bool Datastructures::remove_stop(StopID id)
 {
-    // Replace this comment and the line below with your implementation
     std::unordered_map<StopID,BusStop>::iterator it = stops.find(id);
     if (it == stops.end()) {
         return false;
     } else {
+        // Remove the stop in its direct main region
         std::vector<StopID>& v = regions[stops[id].main_region->regionId]->stops;
         v.erase(std::remove(v.begin(),v.end(),id),v.end());
-        Name name = stops[id].name;
-        double dist = stops[id].dist;
-        stops.erase(id);
+        Name name = stops[id].name; // store name to later delete in multimap
+        double dist = stops[id].dist; //store distance to later delete in multimap
+        stops.erase(id); // erase stop in the main unordered_map
 
+        // delete in multimap name_stop
         std::pair <std::multimap<Name,StopID>::iterator, std::multimap<Name,StopID>::iterator> ret;
         ret = name_stop.equal_range(name);
         for (std::multimap<Name,StopID>::iterator it=ret.first; it!=ret.second; ++it) {
@@ -463,15 +486,17 @@ bool Datastructures::remove_stop(StopID id)
             }
         }
 
+        // If the stop is in the main sorted vector, then delete, otherwise delete it in the new inserted stops vector and map
         auto it1 = std::find(stop_coord.begin(),stop_coord.end(),id);
-
         if (it1 != stop_coord.end())
             stop_coord.erase(stop_coord.begin()+std::distance(stop_coord.begin(),it1));
         else{
+            // delete in vector (swap to the last element and pop)
             auto it2 = std::find(new_stop_coord.begin(),new_stop_coord.end(),id);
             std::iter_swap(it2,new_stop_coord.end()-1);
             new_stop_coord.pop_back();
 
+            //delete in multimap new_coord (new inserted vector sorted by distance)
             std::pair <std::multimap<double,StopID>::iterator, std::multimap<double,StopID>::iterator> ret_;
             ret_ = new_coord.equal_range(dist);
             for (auto it=ret_.first; it!=ret_.second; ++it) {
@@ -481,6 +506,8 @@ bool Datastructures::remove_stop(StopID id)
                 }
             }
         }
+
+        // delete in all_stop vector (swap to the last element and pop)
         auto it3 = std::find(all_stop.begin(),all_stop.end(),id);
         std::iter_swap(it3,all_stop.end()-1);
         all_stop.pop_back();
@@ -491,10 +518,11 @@ bool Datastructures::remove_stop(StopID id)
 
 RegionID Datastructures::stops_common_region(StopID id1, StopID id2)
 {
-    // Replace this comment and the line below with your implementation
+    // Find all parent regions to the given ids
     std::vector<RegionID> stop_regions1 = stop_regions(id1);
     std::vector<RegionID> stop_regions2 = stop_regions(id2);
 
+    // find first common element in 2 vectors
     auto result = std::find_first_of (stop_regions1.begin(), stop_regions1.end(),
                         stop_regions2.begin(), stop_regions2.end());
     if (result == stop_regions1.end())
