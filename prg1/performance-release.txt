@@ -1,0 +1,228 @@
+> read "perftest-all.txt" 
+** Commands from 'perftest-all.txt'
+> # Read performance tests of all operations
+> read "perftest-compulsory.txt"
+** Commands from 'perftest-compulsory.txt'
+> # Read performance tests of compulsory operations
+> read "perftest-access.txt"
+** Commands from 'perftest-access.txt'
+> # Test the performance of stop_name/stop_coord/region_name
+> perftest stop_name;stop_coord;region_name 20 5000 10;30;100;300;1000;3000;10000;30000;100000;300000;1000000
+Timeout for each N is 20 sec. 
+For each N perform 5000 random command(s) from:
+stop_name stop_coord region_name 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,   3.1568e-05 ,  0.000789553 ,  0.000821121
+     30 ,   3.1055e-05 ,  0.000851616 ,  0.000882671
+    100 ,  0.000104651 ,  0.000882793 ,  0.000987444
+    300 ,  0.000302332 ,  0.000997125 ,   0.00129946
+   1000 ,  0.000930138 ,     0.001055 ,   0.00198514
+   3000 ,   0.00325664 ,   0.00116172 ,   0.00441836
+  10000 ,    0.0189938 ,     0.016736 ,    0.0357299
+  30000 ,    0.0860107 ,   0.00145051 ,    0.0874612
+ 100000 ,     0.276043 ,   0.00221162 ,     0.278255
+ 300000 ,     0.987292 ,   0.00231076 ,     0.989602
+1000000 ,      4.73139 ,   0.00260374 ,      4.73399
+> 
+** End of commands from 'perftest-access.txt'
+> read "perftest-sorting.txt"
+** Commands from 'perftest-sorting.txt'
+> # Test the performance of sorting, adding stops in between
+> perftest stops_alphabetically;stops_coord_order;random_add 20 500 10;30;100;300;1000;3000;10000;30000;100000;300000
+Timeout for each N is 20 sec. 
+For each N perform 500 random command(s) from:
+stops_alphabetically stops_coord_order random_add 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,   2.0873e-05 ,   0.00132432 ,    0.0013452
+     30 ,   3.8803e-05 ,   0.00144373 ,   0.00148253
+    100 ,   9.3469e-05 ,    0.0120226 ,     0.012116
+    300 ,  0.000310003 ,   0.00373726 ,   0.00404727
+   1000 ,   0.00118868 ,    0.0283124 ,     0.029501
+   3000 ,    0.0217338 ,      0.06196 ,    0.0836938
+  10000 ,    0.0399091 ,     0.225076 ,     0.264985
+  30000 ,    0.0968086 ,      1.09537 ,      1.19218
+ 100000 ,     0.422323 ,      5.73671 ,      6.15904
+ 300000 ,       1.3259 ,      16.5197 ,      17.8456
+> 
+** End of commands from 'perftest-sorting.txt'
+> read "perftest-minmax.txt"
+** Commands from 'perftest-minmax.txt'
+> # Test the performance of min/max, adding stops in between
+> perftest min_coord;max_coord;random_add 20 500 10;30;100;300;1000;3000;10000;30000;100000;300000;1000000
+Timeout for each N is 20 sec. 
+For each N perform 500 random command(s) from:
+min_coord max_coord random_add 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,   1.8445e-05 ,  0.000372484 ,  0.000390929
+     30 ,   3.1496e-05 ,  0.000444341 ,  0.000475837
+    100 ,  0.000107551 ,  0.000347362 ,  0.000454913
+    300 ,  0.000302782 ,  0.000384232 ,  0.000687014
+   1000 ,   0.00126807 ,  0.000420215 ,   0.00168828
+   3000 ,    0.0154468 ,  0.000555704 ,    0.0160025
+  10000 ,    0.0567977 ,  0.000635044 ,    0.0574328
+  30000 ,     0.162999 ,   0.00196204 ,     0.164961
+ 100000 ,     0.335252 ,   0.00087587 ,     0.336128
+ 300000 ,      1.32512 ,  0.000914882 ,      1.32603
+1000000 ,      5.50159 ,   0.00099139 ,      5.50258
+> 
+** End of commands from 'perftest-minmax.txt'
+> read "perftest-change.txt"
+** Commands from 'perftest-change.txt'
+> # Test the performance of change_stop_name/change_stop_coord
+> perftest change_stop_name;change_stop_coord 20 5000 10;30;100;300;1000;3000;10000;30000;100000;300000;1000000
+Timeout for each N is 20 sec. 
+For each N perform 5000 random command(s) from:
+change_stop_name change_stop_coord 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,   1.8207e-05 ,  0.000660621 ,  0.000678828
+     30 ,   5.4217e-05 ,  0.000647111 ,  0.000701328
+    100 ,  0.000156351 ,   0.00065851 ,  0.000814861
+    300 ,  0.000422906 ,  0.000667278 ,   0.00109018
+   1000 ,   0.00140308 ,  0.000663543 ,   0.00206662
+   3000 ,   0.00445188 ,  0.000694921 ,    0.0051468
+  10000 ,    0.0344296 ,  0.000796186 ,    0.0352258
+  30000 ,     0.266094 ,  0.000939301 ,     0.267034
+ 100000 ,     0.377652 ,   0.00119199 ,     0.378844
+ 300000 ,      1.40297 ,   0.00137459 ,      1.40434
+1000000 ,      5.58817 ,   0.00227765 ,      5.59045
+> 
+** End of commands from 'perftest-change.txt'
+> read "perftest-stop_regions.txt"
+** Commands from 'perftest-stop_regions.txt'
+> # Test the performance of stop_regions
+> perftest stop_regions 20 5000 10;30;100;300;1000;3000;10000;30000;100000;300000;1000000
+Timeout for each N is 20 sec. 
+For each N perform 5000 random command(s) from:
+stop_regions 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,    2.239e-05 ,    0.0010498 ,   0.00107219
+     30 ,   4.5664e-05 ,   0.00145866 ,   0.00150433
+    100 ,  0.000149397 ,   0.00228034 ,   0.00242973
+    300 ,  0.000374674 ,   0.00313015 ,   0.00350483
+   1000 ,   0.00130655 ,   0.00470249 ,   0.00600904
+   3000 ,    0.0216787 ,   0.00586335 ,     0.027542
+  10000 ,    0.0548697 ,    0.0200553 ,     0.074925
+  30000 ,      0.20587 ,    0.0082015 ,     0.214072
+ 100000 ,      0.36192 ,   0.00772247 ,     0.369643
+ 300000 ,      1.23705 ,   0.00856208 ,      1.24561
+1000000 ,        4.836 ,   0.00898923 ,      4.84499
+> 
+** End of commands from 'perftest-stop_regions.txt'
+> read "perftest-find_stops.txt"
+** Commands from 'perftest-find_stops.txt'
+> # Test the performance of find_stops
+> perftest find_stops 20 5000 10;30;100;300;1000;3000;10000;30000;100000;300000;1000000
+Timeout for each N is 20 sec. 
+For each N perform 5000 random command(s) from:
+find_stops 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,   2.2031e-05 ,   0.00116245 ,   0.00118448
+     30 ,   4.5532e-05 ,    0.0294252 ,    0.0294707
+    100 ,  0.000144272 ,    0.0018387 ,   0.00198297
+    300 ,  0.000420925 ,    0.0187845 ,    0.0192055
+   1000 ,   0.00134529 ,   0.00531968 ,   0.00666496
+   3000 ,    0.0219258 ,   0.00383591 ,    0.0257617
+  10000 ,    0.0444256 ,   0.00528748 ,     0.049713
+  30000 ,     0.157284 ,   0.00582342 ,     0.163107
+ 100000 ,     0.369271 ,   0.00781869 ,      0.37709
+ 300000 ,      1.40411 ,    0.0101804 ,      1.41429
+1000000 ,      4.82981 ,    0.0103931 ,       4.8402
+> 
+** End of commands from 'perftest-find_stops.txt'
+> 
+** End of commands from 'perftest-compulsory.txt'
+> read "perftest-bbox.txt"
+** Commands from 'perftest-bbox.txt'
+> # Test the performance of region_bounding_box
+> perftest region_bounding_box 20 5000 10;30;100;300;1000;3000;10000;30000;100000;300000;1000000
+Timeout for each N is 20 sec. 
+For each N perform 5000 random command(s) from:
+region_bounding_box 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,    2.005e-05 ,   0.00536521 ,   0.00538526
+     30 ,   4.3042e-05 ,    0.0211242 ,    0.0211672
+    100 ,  0.000129304 ,    0.0155993 ,    0.0157286
+    300 ,  0.000397974 ,    0.0418516 ,    0.0422496
+   1000 ,   0.00133814 ,    0.0711172 ,    0.0724554
+   3000 ,   0.00430792 ,    0.0610755 ,    0.0653835
+  10000 ,    0.0262225 ,     0.112074 ,     0.138297
+  30000 ,     0.145559 ,    0.0323013 ,      0.17786
+ 100000 ,     0.403014 ,    0.0468607 ,     0.449875
+ 300000 ,      1.41109 ,    0.0479106 ,        1.459
+1000000 ,      5.01971 ,    0.0504271 ,      5.07014
+> 
+** End of commands from 'perftest-bbox.txt'
+> read "perftest-stops_closest_to.txt"
+** Commands from 'perftest-stops_closest_to.txt'
+> # Test the performance of stops_closest_to
+> perftest stops_closest_to 20 500 10;30;100;300;1000;3000;10000;30000;100000;300000
+Timeout for each N is 20 sec. 
+For each N perform 500 random command(s) from:
+stops_closest_to 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,   2.0617e-05 ,  0.000118495 ,  0.000139112
+     30 ,   4.6929e-05 ,   0.00014577 ,  0.000192699
+    100 ,  0.000133417 ,  0.000198574 ,  0.000331991
+    300 ,  0.000365634 ,  0.000333016 ,   0.00069865
+   1000 ,   0.00135228 ,  0.000530158 ,   0.00188244
+   3000 ,    0.0224553 ,  0.000576536 ,    0.0230318
+  10000 ,     0.049025 ,  0.000739372 ,    0.0497643
+  30000 ,     0.255882 ,  0.000922066 ,     0.256804
+ 100000 ,     0.469029 ,  0.000985724 ,     0.470015
+ 300000 ,      1.40548 ,   0.00106369 ,      1.40654
+> 
+** End of commands from 'perftest-stops_closest_to.txt'
+> read "perftest-stops_common_region.txt"
+** Commands from 'perftest-stops_common_region.txt'
+> # Test the performance of stops_common_region
+> perftest stops_common_region 20 5000 10;30;100;300;1000;3000;10000;30000;100000;300000;1000000
+Timeout for each N is 20 sec. 
+For each N perform 5000 random command(s) from:
+stops_common_region 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,   1.7889e-05 ,   0.00158849 ,   0.00160638
+     30 ,   4.5149e-05 ,   0.00218297 ,   0.00222812
+    100 ,  0.000128781 ,   0.00423167 ,   0.00436045
+    300 ,  0.000379368 ,    0.0060158 ,   0.00639517
+   1000 ,   0.00128278 ,    0.0249082 ,     0.026191
+   3000 ,   0.00436366 ,    0.0197044 ,     0.024068
+  10000 ,    0.0479753 ,    0.0232677 ,    0.0712429
+  30000 ,     0.115195 ,    0.0133201 ,     0.128515
+ 100000 ,     0.376918 ,    0.0171049 ,     0.394023
+ 300000 ,      1.32725 ,    0.0216876 ,      1.34894
+1000000 ,      4.87566 ,    0.0205462 ,       4.8962
+> 
+** End of commands from 'perftest-stops_common_region.txt'
+> read "perftest-remove.txt"
+** Commands from 'perftest-remove.txt'
+> # Test the performance of remove_stop
+> perftest remove_stop 20 5000 10;30;100;300;1000;3000;10000;30000;100000;300000;1000000
+Timeout for each N is 20 sec. 
+For each N perform 5000 random command(s) from:
+remove_stop 
+
+      N ,    add (sec) ,   cmds (sec) ,  total (sec)
+     10 ,   2.4101e-05 ,  0.000448459 ,   0.00047256
+     30 ,   4.8678e-05 ,  0.000474628 ,  0.000523306
+    100 ,  0.000142904 ,  0.000562474 ,  0.000705378
+    300 ,  0.000410438 ,  0.000859286 ,   0.00126972
+   1000 ,   0.00141679 ,   0.00255214 ,   0.00396893
+   3000 ,    0.0106445 ,   0.00708107 ,    0.0177255
+  10000 ,    0.0471694 ,    0.0894959 ,     0.136665
+  30000 ,     0.170532 ,    0.0591078 ,     0.229639
+ 100000 ,     0.413217 ,     0.220867 ,     0.634084
+ 300000 ,      1.18612 ,     0.833979 ,       2.0201
+1000000 ,      5.07869 ,      3.13961 ,       8.2183
+> 
+** End of commands from 'perftest-remove.txt'
+> 
+** End of commands from 'perftest-all.txt'
