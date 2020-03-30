@@ -89,12 +89,12 @@
     -std::vector<StopID> stops_alphabetically() : O(n)
         multimap name_stop already sorts the names alphabetically -> inserting StopIDs to a vector takes linear time.        
     
--std::vector<StopID> stops_coord_order() : O(nlogn)
-        + If coord_stop is unsorted (the coordinates are changed): sort again the coord_stop -> O(nlogn)
-        + Sort new_coord_stop -> O(nlogn)
-        + Merge 2 sorted vectors using mergeSort -> O(n1+n2), where n1 and n2 are sizes of coord_stop and new_coord_stop
-        -> Overall O(nlogn)
-        + After merging, clear the content of new_coord_stop -> O(n)
+    -std::vector<StopID> stops_coord_order() : O(nlogn)
+            + If coord_stop is unsorted (the coordinates are changed): sort again the coord_stop -> O(nlogn)
+            + Sort new_coord_stop -> O(nlogn)
+            + Merge 2 sorted vectors using mergeSort -> O(n1+n2), where n1 and n2 are sizes of coord_stop and new_coord_stop
+            -> Overall O(nlogn)
+            + After merging, clear the content of new_coord_stop -> O(n)
         
     StopID min_coord(), max_coord : O(n)
         + If new_stop_coord.size() = 0 (the coordinates are sorted): return first/last values of coord_stop -> O(1) 
@@ -146,7 +146,7 @@
         + Find the region from unodered_map regions -> O(1) on average
         + Traverse through its children (subregions) and push the x and y coordinates of the stops to x_coord and y_coord vectors -> O(n)
         + Find min and max x, y coordinates with std::minmax_element-> O(n)
-
+        
     std::vector<StopID> stops_closest_to(StopID id): O(nlogn)
         + Sort all stops based on the distances to the given stop: O(nlogn)
         
