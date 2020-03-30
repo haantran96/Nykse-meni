@@ -335,15 +335,16 @@ std::vector<RegionID> Datastructures::all_regions()
 
 bool Datastructures::add_stop_to_region(StopID id, RegionID parentid)
 {
-    // Replace this comment and the line below with your implementation
     auto it2 = regions.find(parentid);
     auto it1 = stops.find(id);
     if (it1 == stops.end() || it2 == regions.end()) {
         return false;
     } else {
+
+        // If found stop id
         if (std::find(it2->second->stops.begin(),it2->second->stops.end(),id) == it2->second->stops.end()) {
-            it2->second->stops.push_back(id);
-            stops[id].main_region = it2->second;
+            it2->second->stops.push_back(id); // in regions[parentid]->stops -> push to the vector
+            stops[id].main_region = it2->second; // assign parent id as the direct main region of the stop
             return true; }
         return false;
         }
@@ -352,12 +353,11 @@ bool Datastructures::add_stop_to_region(StopID id, RegionID parentid)
 
 bool Datastructures::add_subregion_to_region(RegionID id, RegionID parentid)
 {
-    // Replace this comment and the line below with your implementation
     bool foundParent = false;
     bool foundChild = false;
     std::unordered_map<RegionID,RegionNode*>::iterator it1 = regions.find(id);
     std::unordered_map<RegionID,RegionNode*>::iterator it2 = regions.find(parentid);
-
+    // check if the regions exist
     if (it2 != regions.end()) {
         foundParent = true;
     }
@@ -368,18 +368,23 @@ bool Datastructures::add_subregion_to_region(RegionID id, RegionID parentid)
     if (foundParent == false || foundChild == false) {
         return false;
     } else {
-        it1->second->parent = it2->second;
-        if (it2->second->child) {
+        // inserting the subregion to the region's child
+        it1->second->parent = it2->second; //point the parentid as the parent of id
+        if (it2->second->child) { // if the parent region already has child/children
+
             while (it2->second->child->next) {
+                // we move the pointer to the end of the siblings
                 it2->second->child = it2->second->child->next;
             }
-            RegionNode* prev = it2->second->child;
-            it2->second->child->next = it1->second;
-            it2->second->child->next->prev = prev;
+            RegionNode* prev = it2->second->child; //store the last sibling
+
+            it2->second->child->next = it1->second; // id is inserted at the end of the siblings list
+            it2->second->child->next->prev = prev; // point the previous last sibling as previous node to id
             return true;
         }
+        // if parentid doesnt have a child, we can simply insert it by parentid->child
         it2->second->child = it1->second;
-        it2->second->child->prev = NULL;
+        it2->second->child->prev = NULL; // as there is no sibling, id->prev doesnt point to anything
         return true;
     }
 }
@@ -455,7 +460,7 @@ std::vector<StopID> Datastructures::stops_closest_to(StopID id)
         std::vector<StopID> stop_distance  = all_stop;
         // Sort all stops based on the distance to the given stop
         std::sort(stop_distance.begin(),stop_distance.end(),[this,xy] (StopID lhs, StopID rhs) { return sortByDistance(lhs, rhs, xy); });
-        if (stop_distance.size() < 6) {
+        if (stop_distance.size() < 6) { // if there is less than 5 stops
             return {stop_distance.begin()+1,stop_distance.end()};
         }
         return {stop_distance.begin()+1,stop_distance.begin()+6};
