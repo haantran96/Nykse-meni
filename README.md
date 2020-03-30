@@ -169,10 +169,10 @@
         + Use std::find_first_of the 2 vectors to find first common element -> worse case O(m*k) with m,k are sizes of the 2 vectors -> O(n) on average
         
 ## Performance test
-I run perftest-all.txt in TUNI linux machine and get these results:
-[release build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg1/performance-release.txt)
-[debug build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg1/performance-debug.txt)
+    I run perftest-all.txt in TUNI linux machine and get these results:
+    [release build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg1/performance-release.txt)
+    [debug build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg1/performance-debug.txt)
 
--In general, release mode yields better performance compared to debug mode, but most of the operations can be finished within 20 seconds after adding 1 million stops and regions.
--Function remove_stop takes more time than the benchmark, because I have a lot of containers to remove the stop from.
+    -In general, release mode yields better performance compared to debug mode, but most of the operations can be finished within 20 seconds after adding 1 million stops and regions.
+    -Function remove_stop takes more time than the benchmark, because I have a lot of containers to remove the stop from.
 -
