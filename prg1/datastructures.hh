@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include<bits/stdc++.h>
 #include <functional>
+#include <deque>
 
 using namespace std;
 // Types for IDs
@@ -180,6 +181,7 @@ private:
     };
 
     struct BusStop {
+        StopID id;
         Name name;
         Coord coord;
         double dist;
@@ -187,22 +189,20 @@ private:
 
     };
 
-    struct Coords {
-        Coord xy;
-        double dist;
-        StopID id;
-    };
 
+    std::multimap<Name,StopID>name_stop;
+    std::multimap<double,StopID>new_coord;
     std::unordered_map<StopID,BusStop> stops;
     std::vector<StopID> new_stop_coord;
-    std::vector<StopID> new_stop_name;
     std::vector<StopID> all_stop;
-    std::vector<StopID> stop_alphabetical;
     std::vector<StopID> stop_coord;
-    std::vector<Name>stop_names;
-
     std::vector<RegionID>allRegions;
     std::unordered_map<RegionID,RegionNode*> regions;
+
+    bool sorted_coord = true;
+    bool sorted_name = true;
+
+
 
     RegionNode *newNode (RegionID regionID, Name regionName){
         RegionNode* node = new RegionNode();
@@ -247,28 +247,28 @@ private:
         }
     }
 
-    bool sortByCoord(const StopID &lhs, const StopID &rhs) {
+    inline bool sortByCoord(const StopID &lhs, const StopID &rhs) {
         if (stops[lhs].dist < stops[rhs].dist) {return true;}
         else if (stops[lhs].dist > stops[rhs].dist) {return false;}
         else {return stops[lhs].coord.y < stops[rhs].coord.y; }
     }
 
-    bool sortByName(const StopID &lhs, const StopID &rhs) { return stops[lhs].name < stops[rhs].name; }
 
-    bool sortByDistance(const StopID &lhs, const StopID &rhs, Coord xy) {
+    inline bool sortByName(const StopID &lhs, const StopID &rhs) { return stops[lhs].name < stops[rhs].name; }
+
+    inline bool sortByDistance(const StopID &lhs, const StopID &rhs, Coord xy) {
         double dist1 = pow(stops[lhs].coord.x - xy.x,2) + pow(stops[lhs].coord.y - xy.y,2);
         double dist2 = pow(stops[rhs].coord.x - xy.x,2) + pow(stops[rhs].coord.y - xy.y,2);
-        if (dist1 <= dist2)  {return true;}
-        else {return false;}
+        if (dist1 < dist2)  {return true;}
+        else if (dist1 > dist2) {return false;}
+        else {return stops[lhs].coord.y < stops[rhs].coord.y; }
     }
 
-
-    bool coord_operator(const Coords &lhs, const Coords &rhs) {
-        if (lhs.dist < lhs.dist) {return true;}
+    inline bool CoordCmp (const BusStop &lhs, const BusStop &rhs) {
+        if (lhs.dist < rhs.dist) {return true;}
         else if (lhs.dist > rhs.dist) {return false;}
-        else {return lhs.xy.y < rhs.xy.y; }
+        else {return lhs.coord.y < rhs.coord.y; }
     }
-
     std::vector<StopID> mergeSort(std::vector<StopID>&v1, std::vector<StopID>&v2, bool(Datastructures::*func)(const StopID&,const StopID&)) {
         std::vector<StopID> stops;
         int n1 = int(v1.size());
@@ -298,12 +298,6 @@ private:
     }
 
 
-    Coords minCoord = {{},{},-999};
-    Coords maxCoord = {{},{},-999};
-    std::multimap<Name,StopID>name_stop;
-    bool creation_finish = false;
-    bool sorted_coord = true;
-    bool sorted_name = true;
 
 };
 
