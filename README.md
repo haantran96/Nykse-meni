@@ -168,7 +168,7 @@
         + Find vectors of regions+subregions with the given StopIDs using the above stop_regions(StopID) -> O(n)
         + Use std::find_first_of the 2 vectors to find first common element -> worse case O(m*k) with m,k are sizes of the 2 vectors -> O(n) on average
         
-##Performance test
+## Performance test
 I run perftest-all.txt in TUNI linux machine and get these results:
 [release build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg1/performance-release.txt)
 [debug build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg1/performance-debug.txt)
