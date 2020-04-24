@@ -317,41 +317,9 @@ private:
     void addEdge(int u, int v);
     std::vector<int> printPath(int *s_parent, int *t_parent, int s,
                              int t, int intersectNode);
-    void BFS(list<int> *queue, bool *visited, int *parent,vector<vector<int>> adjList);
+    void BFS(list<int> *queue, bool *visited, int *parent,vector<vector<int>> &adj_list);
+
     vector<int> biDirSearch(int s, int t);
-
-    bool isConnected(vector<vector<int>>adjacency_list, int src, int dest,
-            vector<bool> &discovered, vector<int> &path)
-    {
-        // mark current node as discovered
-        discovered[src] = true;
-
-        // include current node in the path
-        path.push_back(src);
-
-        // if destination vertex is found
-        if (src == dest) {
-            return true;
-        }
-
-        // do for every edge (src -> i)
-        for (int i:adjacency_list[src])
-        {
-            // u is not discovered
-            if (!discovered[i])
-            {
-                // return true if destination is found
-                if (isConnected(adjacency_list, i, dest, discovered, path))
-                    return true;
-            }
-        }
-
-        // backtrack: remove current node from the path
-        path.pop_back();
-
-        // return false if destination vertex is not reachable from src
-        return false;
-    }
 
 };
 

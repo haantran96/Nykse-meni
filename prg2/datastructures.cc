@@ -211,12 +211,12 @@ std::vector<RouteID> Datastructures::all_routes()
 
 void Datastructures::addEdge(int u, int v)
 {
-//    auto it1 = std::find(adjacency_list[u].begin(),adjacency_list[u].end(),v);
-//    auto it2 = std::find(adjacency_list[v].begin(),adjacency_list[v].end(),u);
-//    if (it1 == adjacency_list[u].end())
-      adjacency_list[u].push_back(v);
-//    if (it2 == adjacency_list[v].end())
-      adj_list_back[v].push_back(u);
+    auto it1 = std::find(adjacency_list[u].begin(),adjacency_list[u].end(),v);
+    auto it2 = std::find(adj_list_back[v].begin(),adj_list_back[v].end(),u);
+    if (it1 == adjacency_list[u].end())
+        adjacency_list[u].push_back(v);
+    if (it2 == adj_list_back[v].end())
+       adj_list_back[v].push_back(u);
 };
 bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
 {   
@@ -283,13 +283,12 @@ void Datastructures::clear_routes()
     routes_main.clear();
     //adjacency_list.clear();
 }
-void Datastructures::BFS(list<int> *queue, bool *visited,
-                                    int *parent, vector<vector<int>> adjList)
+void Datastructures::BFS(list<int> *queue, bool *visited,int *parent, vector<vector<int>>& adj_list)
 {
     int current = queue->front();
     queue->pop_front();
     //vector<vector<int>>::iterator i;
-    for (auto i=adjList[current].begin();i != adjList[current].end();i++)
+    for (auto i=adj_list[current].begin();i != adj_list[current].end();i++)
     {
         // If adjacent vertex is not visited earlier
         // mark it visited by assigning true value
@@ -306,6 +305,7 @@ void Datastructures::BFS(list<int> *queue, bool *visited,
         }
     }
 };
+
 
 // check for intersecting vertex
 int Datastructures::isIntersecting(bool *s_visited, bool *t_visited)
@@ -383,8 +383,8 @@ vector<int> Datastructures::biDirSearch(int s, int t)
     while (!s_queue.empty() && !t_queue.empty())
     {
         // Do BFS from source and target vertices
-        BFS(&s_queue, s_visited, s_parent,adjacency_list);
-        BFS(&t_queue, t_visited, t_parent,adj_list_back);
+        BFS(&s_queue, s_visited, s_parent, adjacency_list);
+        BFS(&t_queue, t_visited, t_parent, adj_list_back);
 
         // check for intersecting vertex
         intersectNode = isIntersecting(s_visited, t_visited);
@@ -430,7 +430,6 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least
 {
     // Replace this comment and the line below with your implementation
     return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
-    journey_any(fromstop,tostop);
 }
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_with_cycle(StopID fromstop)
