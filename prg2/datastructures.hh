@@ -2,13 +2,19 @@
 
 #ifndef DATASTRUCTURES_HH
 #define DATASTRUCTURES_HH
-
 #include <string>
 #include <vector>
-#include <tuple>
 #include <utility>
 #include <limits>
-
+#include <map>
+#include <iostream>
+#include <algorithm>
+#include <cmath>
+#include <unordered_map>
+#include <bits/stdc++.h>
+#include <functional>
+#include <tuple>
+using namespace std;
 // Types for IDs
 using StopID = long int;
 using RegionID = std::string;
@@ -238,6 +244,114 @@ public:
 
 private:
     // Add stuff needed for your class implementation here
+    struct RegionNode {
+        RegionID regionId;
+        Name regionName;
+        std::vector<StopID>stops;
+        RegionNode *child; //child node
+        RegionNode *next;  //next sibling
+        RegionNode *prev;  //previous sibling
+        RegionNode *parent; //parent node
+    };
+
+    struct RouteStop {
+        RouteID routeId;
+        StopID stopId;
+        int index;
+    };
+
+    // Stop's information
+    struct BusStop {
+        StopID id;
+        int ind;
+        Name name;
+        Coord coord;
+        double dist; //distance to origin (0,0)
+        RegionNode* main_region; //direct region that contains the stop
+        std::vector<RouteStop> routes;
+    };
+
+    // Region's information. This is similar to sibling-child tree representation, but adding parent node
+    std::unordered_map<StopID,BusStop> stops_main;
+    std::vector<StopID> all_stop;
+    std::vector<StopID> stop_coord;
+    std::vector<RegionID>allRegions;
+    std::unordered_map<RegionID,RegionNode*> regions;
+
+    bool sorted_coord = true;
+
+    RegionNode *newNode (RegionID regionID, Name regionName){
+        // Function to create new region node
+        RegionNode* node = new RegionNode();
+        node->regionId = regionID;
+        node->regionName = regionName;
+        node->stops = {};
+        node->child =  NULL;
+        node->next = NULL;
+        node->prev = NULL;
+        node->parent = NULL;
+        return node;
+      }
+
+
+
+    Distance calculateDistance(StopID lhs, StopID rhs) {
+        double dist = pow(stops_main[lhs].coord.x - stops_main[rhs].coord.x,2) + pow(stops_main[lhs].coord.y - stops_main[rhs].coord.y,2);
+        return int(sqrt(dist));
+    }
+    // PHASE II
+    struct vertex {
+        int ind;
+        StopID stopId;
+    };
+
+    std::unordered_map<RouteID,std::vector<RouteStop>>routes_main;
+    int V = 0;
+
+    vector<vector<int>> adjacency_list;
+    vector<vector<int>> adj_list_back;
+
+    std::unordered_map<StopID,int>vertex_id;
+
+    int isIntersecting(bool *s_visited, bool *t_visited);
+    void addEdge(int u, int v);
+    std::vector<int> printPath(int *s_parent, int *t_parent, int s,
+                             int t, int intersectNode);
+    void BFS(list<int> *queue, bool *visited, int *parent,vector<vector<int>> adjList);
+    vector<int> biDirSearch(int s, int t);
+
+    bool isConnected(vector<vector<int>>adjacency_list, int src, int dest,
+            vector<bool> &discovered, vector<int> &path)
+    {
+        // mark current node as discovered
+        discovered[src] = true;
+
+        // include current node in the path
+        path.push_back(src);
+
+        // if destination vertex is found
+        if (src == dest) {
+            return true;
+        }
+
+        // do for every edge (src -> i)
+        for (int i:adjacency_list[src])
+        {
+            // u is not discovered
+            if (!discovered[i])
+            {
+                // return true if destination is found
+                if (isConnected(adjacency_list, i, dest, discovered, path))
+                    return true;
+            }
+        }
+
+        // backtrack: remove current node from the path
+        path.pop_back();
+
+        // return false if destination vertex is not reachable from src
+        return false;
+    }
 
 };
 
