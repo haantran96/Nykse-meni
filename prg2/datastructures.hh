@@ -269,6 +269,8 @@ private:
         double dist; //distance to origin (0,0)
         RegionNode* main_region; //direct region that contains the stop
         std::vector<RouteStop> routes;
+        std::vector<RouteID> route_ids;
+
     };
 
     // Region's information. This is similar to sibling-child tree representation, but adding parent node
@@ -320,7 +322,7 @@ private:
     void BFS(list<int> *queue, bool *visited, int *parent,vector<vector<int>> &adj_list);
 
     vector<int> biDirSearch(int s, int t);
-
+    RouteID findConnectRoute (StopID s, StopID t);
 };
 
 #endif // DATASTRUCTURES_HH

@@ -211,12 +211,12 @@ std::vector<RouteID> Datastructures::all_routes()
 
 void Datastructures::addEdge(int u, int v)
 {
-    auto it1 = std::find(adjacency_list[u].begin(),adjacency_list[u].end(),v);
-    auto it2 = std::find(adj_list_back[v].begin(),adj_list_back[v].end(),u);
-    if (it1 == adjacency_list[u].end())
-        adjacency_list[u].push_back(v);
-    if (it2 == adj_list_back[v].end())
-       adj_list_back[v].push_back(u);
+//    auto it1 = std::find(adjacency_list[u].begin(),adjacency_list[u].end(),v);
+//    auto it2 = std::find(adj_list_back[v].begin(),adj_list_back[v].end(),u);
+//    if (it1 == adjacency_list[u].end())
+    adjacency_list[u].push_back(v);
+//    if (it2 == adj_list_back[v].end())
+    adj_list_back[v].push_back(u);
 };
 bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
 {   
@@ -233,6 +233,7 @@ bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
         RouteStop route_stop = {id,stops[i],i};
         stop_info.push_back(route_stop);
         stops_main[stops[i]].routes.push_back(route_stop);
+        stops_main[stops[i]].route_ids.push_back(id);
 
         if (i != stop_counts-1) {
             int src = vertex_id[stops[i]];
@@ -399,6 +400,16 @@ vector<int> Datastructures::biDirSearch(int s, int t)
     }
     return path;
 }
+
+RouteID Datastructures::findConnectRoute(StopID s, StopID t)
+{
+    std::vector<RouteID>route_s = stops_main[s].route_ids;
+    std::vector<RouteID>route_t = stops_main[t].route_ids;
+
+    auto result = std::find_first_of (route_s.begin(), route_s.end(),
+                        route_t.begin(), route_t.end());
+    return route_s.at(std::distance(route_s.begin(), result)) ;
+}
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(StopID fromstop, StopID tostop)
 {
     // Replace this comment and the line below with your implementation
@@ -413,23 +424,65 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(S
 
         std::vector<std::tuple<StopID, RouteID, Distance>>journey;
         path = biDirSearch(src,dest);
+//        if (path.size()>0) {
+//            int dist = 0;
+//            StopID temp = all_stop.at(path[0]);
+//            for (auto i:path) {
+//                dist += calculateDistance(all_stop.at(i),temp);
+//                temp = all_stop.at(i);
+//                journey.push_back({all_stop.at(i),NO_ROUTE,dist});
+//            }
+//        }
         if (path.size()>0) {
             int dist = 0;
             StopID temp = all_stop.at(path[0]);
-            for (auto i:path) {
-                dist += calculateDistance(all_stop.at(i),temp);
-                temp = all_stop.at(i);
-                journey.push_back({all_stop.at(i),NO_ROUTE,dist});
+            for (int i =0; i<int(path.size());i++) {
+                dist += calculateDistance(all_stop.at(path[i]),temp);
+                temp = all_stop.at(path[i]);
+
+                if (i == int(path.size()-1))
+                    journey.push_back({all_stop.at(path[i]), NO_ROUTE,dist});
+                else {
+                    RouteID routeID = findConnectRoute(temp,all_stop.at(path[i+1]));
+                    journey.push_back({all_stop.at(path[i]), routeID,dist});
+                }
             }
         }
+
         return journey;
     }
 }
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least_stops(StopID fromstop, StopID tostop)
 {
-    // Replace this comment and the line below with your implementation
-    return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
+    if (stops_main.find(fromstop) == stops_main.end() || stops_main.find(tostop) == stops_main.end())
+        return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
+    else {
+        std::vector<bool>discovered(V,false);
+        int src = vertex_id[fromstop];
+        int dest = vertex_id[tostop];
+        queue<int> q;
+        vector<int> path;
+
+        std::vector<std::tuple<StopID, RouteID, Distance>>journey;
+        path = biDirSearch(src,dest);
+        if (path.size()>0) {
+            int dist = 0;
+            StopID temp = all_stop.at(path[0]);
+            for (int i =0; i<int(path.size());i++) {
+                dist += calculateDistance(all_stop.at(path[i]),temp);
+                temp = all_stop.at(path[i]);
+
+                if (i == int(path.size()-1))
+                    journey.push_back({all_stop.at(path[i]), NO_ROUTE,dist});
+                else {
+                    RouteID routeID = findConnectRoute(temp,all_stop.at(path[i+1]));
+                    journey.push_back({all_stop.at(path[i]), routeID,dist});
+                }
+            }
+        }
+        return journey;
+    }
 }
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_with_cycle(StopID fromstop)
