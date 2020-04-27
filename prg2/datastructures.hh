@@ -323,6 +323,7 @@ private:
 
     vector<int> biDirSearch(int s, int t);
     RouteID findConnectRoute (StopID s, StopID t);
+    void DFS(list<int>*queue, bool *visited, int *parent, int& found, int& foundParent);
 };
 
 #endif // DATASTRUCTURES_HH

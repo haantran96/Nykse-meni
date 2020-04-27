@@ -211,11 +211,11 @@ std::vector<RouteID> Datastructures::all_routes()
 
 void Datastructures::addEdge(int u, int v)
 {
-//    auto it1 = std::find(adjacency_list[u].begin(),adjacency_list[u].end(),v);
-//    auto it2 = std::find(adj_list_back[v].begin(),adj_list_back[v].end(),u);
-//    if (it1 == adjacency_list[u].end())
-    adjacency_list[u].push_back(v);
-//    if (it2 == adj_list_back[v].end())
+    auto it1 = std::find(adjacency_list[u].begin(),adjacency_list[u].end(),v);
+    auto it2 = std::find(adj_list_back[v].begin(),adj_list_back[v].end(),u);
+    if (it1 == adjacency_list[u].end())
+        adjacency_list[u].push_back(v);
+    if (it2 == adj_list_back[v].end())
     adj_list_back[v].push_back(u);
 };
 bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
@@ -288,7 +288,6 @@ void Datastructures::BFS(list<int> *queue, bool *visited,int *parent, vector<vec
 {
     int current = queue->front();
     queue->pop_front();
-    //vector<vector<int>>::iterator i;
     for (auto i=adj_list[current].begin();i != adj_list[current].end();i++)
     {
         // If adjacent vertex is not visited earlier
@@ -416,39 +415,21 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(S
     if (stops_main.find(fromstop) == stops_main.end() || stops_main.find(tostop) == stops_main.end())
         return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
     else {
-        std::vector<bool>discovered(V,false);
         int src = vertex_id[fromstop];
         int dest = vertex_id[tostop];
-        queue<int> q;
         vector<int> path;
 
         std::vector<std::tuple<StopID, RouteID, Distance>>journey;
         path = biDirSearch(src,dest);
-//        if (path.size()>0) {
-//            int dist = 0;
-//            StopID temp = all_stop.at(path[0]);
-//            for (auto i:path) {
-//                dist += calculateDistance(all_stop.at(i),temp);
-//                temp = all_stop.at(i);
-//                journey.push_back({all_stop.at(i),NO_ROUTE,dist});
-//            }
-//        }
         if (path.size()>0) {
             int dist = 0;
             StopID temp = all_stop.at(path[0]);
-            for (int i =0; i<int(path.size());i++) {
-                dist += calculateDistance(all_stop.at(path[i]),temp);
-                temp = all_stop.at(path[i]);
-
-                if (i == int(path.size()-1))
-                    journey.push_back({all_stop.at(path[i]), NO_ROUTE,dist});
-                else {
-                    RouteID routeID = findConnectRoute(temp,all_stop.at(path[i+1]));
-                    journey.push_back({all_stop.at(path[i]), routeID,dist});
-                }
+            for (auto i:path) {
+                dist += calculateDistance(all_stop.at(i),temp);
+                temp = all_stop.at(i);
+                journey.push_back({all_stop.at(i),NO_ROUTE,dist});
             }
         }
-
         return journey;
     }
 }
@@ -484,12 +465,81 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least
         return journey;
     }
 }
+void Datastructures::DFS(list<int>*queue, bool *visited, int *parent, int& found, int& foundParent) {
+
+    int current = queue->back();
+    queue->pop_back();
+    visited[current] = true;
+    if (adjacency_list[current].size() >0 ) {
+        for (auto i = adjacency_list[current].begin();i != adjacency_list[current].end();++i) {
+            if (!visited[*i]) {
+                queue->push_back(*i);
+                parent[*i] = current;
+                DFS(queue,visited,parent,found,foundParent);
+            } else {
+                found = *i;
+                foundParent = current;
+                break;
+            }
+        }
+    }
+}
+
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_with_cycle(StopID fromstop)
 {
     // Replace this comment and the line below with your implementation
-    return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
+    if (stops_main.find(fromstop) == stops_main.end())
+        return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
+    else {
+        bool s_visited[V];
+        list<int> s_queue;
+        int s_parent[V];
+        for(int i=0; i<V; i++)
+        {
+            s_visited[i] = false;
+        }
+
+        int s = vertex_id[fromstop];
+        s_visited[s] = true;
+        s_queue.push_back(s);
+        s_parent[s]= -1;
+        int found = -1;
+        int foundParent = -1;
+        list<StopID> path;
+        std::vector<std::tuple<StopID, RouteID, Distance>>journey;
+
+        // searching for path using DFS
+        while (!s_queue.empty()) {
+            DFS(&s_queue, s_visited, s_parent, found, foundParent);
+            if (found != -1) {
+                path.push_front(all_stop.at(found));
+                path.push_front(all_stop.at(foundParent));
+                int i = foundParent;
+                while (i != s) {
+                    path.push_front(all_stop.at(s_parent[i]));
+                    i = s_parent[i];
+                }
+            }
+        }
+        if (path.size()>0) {
+            int dist = 0;
+            StopID temp = *path.begin();
+            for (auto i = path.begin(); i != path.end();++i) {
+                dist += calculateDistance(*i,temp);
+                temp = *i;
+                if (i == std::next(path.end(),-1))
+                    journey.push_back({*i, NO_ROUTE,dist});
+                else {
+                    RouteID routeID = findConnectRoute(temp,*std::next(i,1));
+                    journey.push_back({*i, routeID,dist});
+                }
+            }
+        }
+        return journey;
+    }
 }
+
 
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_shortest_distance(StopID fromstop, StopID tostop)
 {
