@@ -14,6 +14,7 @@
 #include <bits/stdc++.h>
 #include <functional>
 #include <tuple>
+#include <queue>
 using namespace std;
 // Types for IDs
 using StopID = long int;
@@ -301,10 +302,32 @@ private:
         double dist = pow(stops_main[lhs].coord.x - stops_main[rhs].coord.x,2) + pow(stops_main[lhs].coord.y - stops_main[rhs].coord.y,2);
         return int(sqrt(dist));
     }
+
+    double eucl_distance(Coord lhs, Coord rhs) {
+        double dist = pow(lhs.x - rhs.x,2) + pow(lhs.y - rhs.y,2);
+        return int(sqrt(dist));
+    }
     // PHASE II
     struct vertex {
         int ind;
         StopID stopId;
+        RouteID routeId;
+    };
+    struct AstarNode {
+        int id;
+        double dist_g;
+        double dist_h;
+        double dist_f;
+        int parent;
+//        AstarNode(int id, double dist_g, double dist_h, double dist_f, int parent)
+//        : id(id), dist_g(dist_g), dist_h(dist_h), dist_f(dist_f), parent(parent)
+//        {
+//        }
+    };
+    struct compare{
+        bool operator() (const AstarNode& lhs,const AstarNode& rhs ){
+             return (lhs.dist_f > rhs.dist_f);
+        }
     };
 
     std::unordered_map<RouteID,std::vector<RouteStop>>routes_main;
@@ -324,6 +347,37 @@ private:
     vector<int> biDirSearch(int s, int t);
     RouteID findConnectRoute (StopID s, StopID t);
     void DFS(list<int>*queue, bool *visited, int *parent, int& found, int& foundParent);
+
+    inline double heuristic(Coord a, Coord b) {
+      return std::abs(a.x - b.x) + std::abs(a.y - b.y);
+    }
+
+    void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, bool *visited, int t, Coord tgt,vector<vector<int>> &adj_list,std::unordered_map<int,AstarNode> &node_map) {
+        AstarNode current = queue->top();
+        queue->pop();
+        visited[current.id] = true;
+        if (current.id == t) {
+            return;
+        }
+        for (auto i=adj_list[current.id].begin(); i!=adj_list[current.id].end(); i++) {
+            if (!visited[*i]) {
+                int parent = current.id;
+                Coord coord_i = stops_main[all_stop[*i]].coord;
+                Coord coord_p = stops_main[all_stop[parent]].coord;
+
+                double dist_h = heuristic(coord_i,tgt);
+                double dist_g = node_map[parent].dist_g +eucl_distance(coord_p,coord_i);
+                if (node_map.find(*i) == node_map.end())  {
+                    node_map[*i] = {*i,dist_g,dist_h,dist_g+dist_h,current.id};
+                } else {
+                    if (node_map[*i].dist_f > dist_g+dist_h)
+                        node_map[*i] = {*i,dist_g,dist_h,dist_g+dist_h,current.id};
+                }
+                queue->push({*i,dist_g,dist_h,dist_g+dist_h,current.id});
+            }
+        }
+
+    }
 };
 
 #endif // DATASTRUCTURES_HH
