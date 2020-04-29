@@ -259,6 +259,7 @@ private:
         RouteID routeId;
         StopID stopId;
         int index;
+        std::vector<std::pair<Time,Duration>>trips;
     };
 
     // Stop's information
@@ -270,9 +271,9 @@ private:
         double dist; //distance to origin (0,0)
         RegionNode* main_region; //direct region that contains the stop
         std::vector<RouteStop> routes;
-//        std::vector<RouteID> route_ids;
-//        std::vector<StopID> edges;
         std::unordered_map<StopID,RouteID> next_stop;
+        std::vector<std::pair<Time,Duration>>trips;
+
     };
 
     // Region's information. This is similar to sibling-child tree representation, but adding parent node
@@ -309,21 +310,13 @@ private:
         return int(sqrt(dist));
     }
     // PHASE II
-    struct vertex {
-        int ind;
-        StopID stopId;
-        RouteID routeId;
-    };
+
     struct AstarNode {
         int id;
         double dist_g;
         double dist_h;
         double dist_f;
         int parent;
-//        AstarNode(int id, double dist_g, double dist_h, double dist_f, int parent)
-//        : id(id), dist_g(dist_g), dist_h(dist_h), dist_f(dist_f), parent(parent)
-//        {
-//        }
     };
     struct compare{
         bool operator() (const AstarNode& lhs,const AstarNode& rhs ){
@@ -354,36 +347,7 @@ private:
     }
 
     void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, bool *visited, StopID tgt,
-                vector<vector<int>> &adj_list,double *dist_f,double *dist_g,double *dist_h, int *s_parent, int& found) {
-        AstarNode current = queue->top();
-        queue->pop();
-        visited[current.id] = true;
-
-       // cout << "visiting " << all_stop[current.id] << " " <<dist_f[current.id]<< endl;
-        if (current.id == stops_main[tgt].int_id) {
-            found = current.id;
-            return;
-        }
-
-        for (auto i=adj_list[current.id].begin(); i!=adj_list[current.id].end(); i++) {
-            if (!visited[*i]) {
-                int parent = current.id;
-                Coord coord_i = stops_main[all_stop[*i]].coord;
-                Coord coord_p = stops_main[all_stop[parent]].coord;
-                double dst_h = eucl_distance(coord_i,stops_main[tgt].coord);
-                double dst_g =  dist_g[parent]+eucl_distance(coord_p,coord_i);
-                if (dist_f[*i] > dst_g+dst_h){
-                    dist_f[*i] = dst_g+dst_h;
-                    dist_g[*i] = dst_g;
-                    dist_h[*i] = dst_h;
-                    s_parent[*i] = current.id;
-                }
-                //cout << all_stop[*i] << " " << dst_g << " " << dst_h << endl;
-                queue->push({*i,dst_g,dst_h,dst_g+dst_h,current.id});
-            }
-        }
-
-    }
+                vector<vector<int>> &adj_list,double *dist_f,double *dist_g,double *dist_h, int *s_parent, int& found);
 };
 
 #endif // DATASTRUCTURES_HH

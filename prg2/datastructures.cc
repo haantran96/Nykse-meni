@@ -220,6 +220,7 @@ void Datastructures::addEdge(int u, int v)
         adjacency_list[u].push_back(v);
     if (it2 == adj_list_back[v].end())
     adj_list_back[v].push_back(u);
+
 };
 bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
 {
@@ -233,12 +234,10 @@ bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
     for (int i=0; i < stop_counts;i++) {
         if (stops_main.find(stops[i]) == stops_main.end())
              return false;
-        RouteStop route_stop = {id,stops[i],i};
+        RouteStop route_stop = {id,stops[i],i,{}};
         stop_info.push_back(route_stop);
         stops_main[stops[i]].routes.push_back(route_stop);
         if (i != stop_counts-1) {
-//            stops_main[stops[i]].edges.push_back(stops[i+1]);
-//            stops_main[stops[i]].route_ids.push_back(id);
             stops_main[stops[i]].next_stop.insert(std::pair(stops[i+1],id));
             int src = stops_main[stops[i]].int_id;
             int dest = stops_main[stops[i+1]].int_id;
@@ -251,7 +250,7 @@ bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
 
 std::vector<std::pair<RouteID, StopID>> Datastructures::routes_from(StopID stopid)
 {
-    // Replace this comment and the line below with your implementation
+    // Replace this comment and the line below with your implementationx
     if (routes_main.size() == 0)
         return {};
     std::vector<RouteStop>routes = stops_main[stopid].routes;
@@ -451,10 +450,6 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least
                 if (i == int(path.size()-1))
                     journey.push_back({all_stop.at(path[i]), NO_ROUTE,dist});
                 else {
-//                    vector<StopID> ed = stops_main[all_stop.at(path[i])].edges;
-//                    vector<RouteID> rs = stops_main[all_stop.at(path[i])].route_ids;
-//                    auto it = std::find(ed.begin(),ed.end(),all_stop.at(path[i+1]));
-//                    RouteID routeId = rs.at(std::distance(ed.begin(), it));
                     StopID curr = all_stop[path[i]];
                     StopID next = all_stop[path[i+1]];
                     RouteID routeId = stops_main[curr].next_stop[next];
@@ -541,7 +536,38 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_with_
     }
 }
 
+void Datastructures::A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, bool *visited, StopID tgt,
+                            vector<vector<int> > &adj_list, double *dist_f, double *dist_g, double *dist_h, int *s_parent, int &found)
+{
+    AstarNode current = queue->top();
+    queue->pop();
+    visited[current.id] = true;
 
+   // cout << "visiting " << all_stop[current.id] << " " <<dist_f[current.id]<< endl;
+    if (current.id == stops_main[tgt].int_id) {
+        found = current.id;
+        return;
+    }
+
+    for (auto i=adj_list[current.id].begin(); i!=adj_list[current.id].end(); i++) {
+        if (!visited[*i]) {
+            int parent = current.id;
+            Coord coord_i = stops_main[all_stop[*i]].coord;
+            Coord coord_p = stops_main[all_stop[parent]].coord;
+            double dst_h = eucl_distance(coord_i,stops_main[tgt].coord);
+            double dst_g =  dist_g[parent]+eucl_distance(coord_p,coord_i);
+            if (dist_f[*i] > dst_g+dst_h){
+                dist_f[*i] = dst_g+dst_h;
+                dist_g[*i] = dst_g;
+                dist_h[*i] = dst_h;
+                s_parent[*i] = current.id;
+            }
+            //cout << all_stop[*i] << " " << dst_g << " " << dst_h << endl;
+            queue->push({*i,dst_g,dst_h,dst_g+dst_h,current.id});
+        }
+    }
+
+}
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_shortest_distance(StopID fromstop, StopID tostop)
 {
     // Replace this comment and the line below with your implementation
@@ -600,7 +626,6 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
         }
        return journey;
 
-
     }
 
 }
@@ -608,13 +633,53 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
 bool Datastructures::add_trip(RouteID routeid, std::vector<Time> const& stop_times)
 {
     // Replace this comment and the line below with your implementation
-    return false;
+    if (routes_main.find(routeid) == routes_main.end())
+        return false;
+    else {
+        std::vector<RouteStop>&route_stop = routes_main[routeid];
+        for (int i = 0; i < int(stop_times.size()); i++) {
+            StopID stopid = route_stop[i].stopId;
+            Duration duration;
+            if (i == int(stop_times.size())-1) {
+                duration = 0;
+            }
+            else {
+                duration = stop_times[i+1] - stop_times[i];
+            }
+            stops_main[stopid].trips.push_back(std::pair(stop_times[i],duration));
+            route_stop[i].trips.push_back(std::pair(stop_times[i],duration));
+        }
+        return true;
+    }
 }
 
 std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID routeid, StopID stopid)
 {
     // Replace this comment and the line below with your implementation
-    return {{NO_TIME, NO_DURATION}};
+    if (routes_main.find(routeid) == routes_main.end())
+        return {{NO_TIME, NO_DURATION}};
+    else {
+        std::vector<RouteStop> route_stop = routes_main[routeid];
+        std::vector<std::pair<Time, Duration>> route_time;
+        auto it = std::find_if(
+            route_stop.begin(),
+            route_stop.end(),
+            [stopid](const RouteStop& item) //you want to compare an item
+                {return item.stopId == stopid; } );
+
+//        for (auto r:route_stop) {
+//            if (r.stopId == stopid) {
+//                std::vector<std::pair<Time,Duration>> trip = r.trips;
+//                route_time.insert(route_time.end(),trip.begin(),trip.end());
+//            }
+//        }
+        if (it == route_stop.end())
+            return {{NO_TIME, NO_DURATION}};
+        else {
+            route_time.insert(route_time.end(),it->trips.begin(),it->trips.end());
+        }
+        return route_time;
+    }
 }
 
 std::vector<std::tuple<StopID, RouteID, Time> > Datastructures::journey_earliest_arrival(StopID fromstop, StopID tostop, Time starttime)
