@@ -264,14 +264,15 @@ private:
     // Stop's information
     struct BusStop {
         StopID id;
-        int ind;
+        int int_id;
         Name name;
         Coord coord;
         double dist; //distance to origin (0,0)
         RegionNode* main_region; //direct region that contains the stop
         std::vector<RouteStop> routes;
-        std::vector<RouteID> route_ids;
-
+//        std::vector<RouteID> route_ids;
+//        std::vector<StopID> edges;
+        std::unordered_map<StopID,RouteID> next_stop;
     };
 
     // Region's information. This is similar to sibling-child tree representation, but adding parent node
@@ -352,28 +353,33 @@ private:
       return std::abs(a.x - b.x) + std::abs(a.y - b.y);
     }
 
-    void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, bool *visited, int t, Coord tgt,vector<vector<int>> &adj_list,std::unordered_map<int,AstarNode> &node_map) {
+    void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, bool *visited, StopID tgt,
+                vector<vector<int>> &adj_list,double *dist_f,double *dist_g,double *dist_h, int *s_parent, int& found) {
         AstarNode current = queue->top();
         queue->pop();
         visited[current.id] = true;
-        if (current.id == t) {
+
+       // cout << "visiting " << all_stop[current.id] << " " <<dist_f[current.id]<< endl;
+        if (current.id == stops_main[tgt].int_id) {
+            found = current.id;
             return;
         }
+
         for (auto i=adj_list[current.id].begin(); i!=adj_list[current.id].end(); i++) {
             if (!visited[*i]) {
                 int parent = current.id;
                 Coord coord_i = stops_main[all_stop[*i]].coord;
                 Coord coord_p = stops_main[all_stop[parent]].coord;
-
-                double dist_h = heuristic(coord_i,tgt);
-                double dist_g = node_map[parent].dist_g +eucl_distance(coord_p,coord_i);
-                if (node_map.find(*i) == node_map.end())  {
-                    node_map[*i] = {*i,dist_g,dist_h,dist_g+dist_h,current.id};
-                } else {
-                    if (node_map[*i].dist_f > dist_g+dist_h)
-                        node_map[*i] = {*i,dist_g,dist_h,dist_g+dist_h,current.id};
+                double dst_h = eucl_distance(coord_i,stops_main[tgt].coord);
+                double dst_g =  dist_g[parent]+eucl_distance(coord_p,coord_i);
+                if (dist_f[*i] > dst_g+dst_h){
+                    dist_f[*i] = dst_g+dst_h;
+                    dist_g[*i] = dst_g;
+                    dist_h[*i] = dst_h;
+                    s_parent[*i] = current.id;
                 }
-                queue->push({*i,dist_g,dist_h,dist_g+dist_h,current.id});
+                //cout << all_stop[*i] << " " << dst_g << " " << dst_h << endl;
+                queue->push({*i,dst_g,dst_h,dst_g+dst_h,current.id});
             }
         }
 
