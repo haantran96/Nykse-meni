@@ -313,7 +313,6 @@ private:
     struct AstarNode {
         int id;
         double dist_f;
-        Time time;
     };
     struct Astar_dist {
         double dist_g;
@@ -322,6 +321,11 @@ private:
         bool visited;
     };
 
+    struct Graph {
+        Distance dist_g;
+        int s_parent;
+        bool visited;
+    };
 
     struct compare{
         bool operator() (const AstarNode& lhs,const AstarNode& rhs ){
@@ -352,8 +356,7 @@ private:
     void BFS(list<int> *queue, bool *visited, int *parent,vector<vector<int>> &adj_list);
 
     vector<int> biDirSearch(int s, int t);
-    RouteID findConnectRoute (StopID s, StopID t);
-    void DFS(list<int>*queue, bool *visited, int *parent, int& found, int& foundParent);
+    void DFS(list<int>*queue, Graph* nodes, int& found,int&found_parent, int& final_dist);
 
     inline double heuristic(Coord a, Coord b) {
       return std::abs(a.x - b.x) + std::abs(a.y - b.y);
@@ -364,10 +367,7 @@ private:
     }
 
 
-    void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, bool *visited, StopID tgt,
-                vector<vector<int>> &adj_list,double *dist_f,double *dist_g, int *s_parent, int& found);
-
-    void A_star2(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, StopID tgt,
+    void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, StopID tgt,
                 vector<vector<int>> &adj_list, Astar_dist* node, int& found);
 
     void connection_scan(std::vector<int>&in_connections, std::vector<Time>&earliest_arrival, int tgt);
