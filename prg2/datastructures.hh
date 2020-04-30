@@ -315,6 +315,13 @@ private:
         double dist_f;
         Time time;
     };
+    struct Astar_dist {
+        int id;
+        double dist_g;
+        double dist_f;
+        int s_parent;
+        bool visited;
+    };
 
 
     struct compare{
@@ -324,8 +331,11 @@ private:
     };
 
     struct Connection {
-        int src,tgt;
-        Time src_ts, tgt_ts;
+        int src;
+        int tgt;
+        Time src_ts;
+        Time tgt_ts;
+        RouteID routeId;
     };
     std::vector<Connection> connections;
 
@@ -335,8 +345,7 @@ private:
     vector<vector<int>> adjacency_list;
     vector<vector<int>> adj_list_back;
 
-    std::unordered_map<StopID,int>vertex_id;
-
+    vector<RouteID>connection_routes;
     int isIntersecting(bool *s_visited, bool *t_visited);
     void addEdge(int u, int v);
     std::vector<int> printPath(int *s_parent, int *t_parent, int s,
@@ -352,14 +361,16 @@ private:
     }
     inline bool sortConnection(const Connection &lhs, const Connection &rhs) {
         // sorting by distance to origin
-        if (int(lhs.src_ts) < int(rhs.src_ts)) {
-            return true;}
-        else {return false; }
+       return lhs.src_ts < rhs.src_ts;
     }
 
 
     void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, bool *visited, StopID tgt,
-                vector<vector<int>> &adj_list,double *dist_f,double *dist_g,double *dist_h, int *s_parent, int& found);
+                vector<vector<int>> &adj_list,double *dist_f,double *dist_g, int *s_parent, int& found);
+
+    void A_star2(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, StopID tgt,
+                vector<vector<int>> &adj_list, Astar_dist* node, int& found);
+
     void connection_scan(std::vector<int>&in_connections, std::vector<Time>&earliest_arrival, int tgt);
     bool sorted_ts = false;
 };
