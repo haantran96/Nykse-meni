@@ -14,7 +14,6 @@
 
 #include <limits>
 
-const double infinity = std::numeric_limits<double>::max();
 
 std::minstd_rand rand_engine; // Reasonably quick pseudo-random generator
 
@@ -60,7 +59,10 @@ void Datastructures::clear_all()
     clear_routes();
     adjacency_list.clear();
     adj_list_back.clear();
+    connections.clear();
     V=0;
+    sorted_ts = false;
+
 }
 
 std::vector<StopID> Datastructures::all_stops()
@@ -229,6 +231,8 @@ bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
         return false;
     if (stops.size() == 1)
         return false;
+    sorted_ts = false;
+
     std::vector<RouteStop> stop_info;
     int stop_counts = int(stops.size());
     for (int i=0; i < stop_counts;i++) {
@@ -563,7 +567,7 @@ void Datastructures::A_star(priority_queue<AstarNode, vector<AstarNode>, compare
                 s_parent[*i] = current.id;
             }
             //cout << all_stop[*i] << " " << dst_g << " " << dst_h << endl;
-            queue->push({*i,dst_g,dst_h,dst_g+dst_h,current.id});
+            queue->push({*i,dst_g+dst_h,{}});
         }
     }
 
@@ -574,6 +578,7 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
     if (stops_main.find(fromstop) == stops_main.end() || stops_main.find(tostop) == stops_main.end())
         return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
     else {
+        const double infinity = std::numeric_limits<double>::max();
 
         int s = stops_main[fromstop].int_id;
         int t = stops_main[tostop].int_id;
@@ -599,7 +604,7 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
         // queue for front and backward search
         std::priority_queue<AstarNode, vector<AstarNode>, compare> s_queue;
 
-        s_queue.push({s,0,heuristic(src,tgt),heuristic(src,tgt),-1});
+        s_queue.push({s,eucl_distance(src,tgt),{}});
         s_visited[s] = true;
         s_parent[s]= -1;
         int found = -1;
@@ -636,27 +641,64 @@ bool Datastructures::add_trip(RouteID routeid, std::vector<Time> const& stop_tim
     if (routes_main.find(routeid) == routes_main.end())
         return false;
     else {
+        sorted_ts = false;
         std::vector<RouteStop>&route_stop = routes_main[routeid];
         for (int i = 0; i < int(stop_times.size()); i++) {
             StopID stopid = route_stop[i].stopId;
             Duration duration;
+            int next_stop_int;
+            StopID next_stop;
+            Time arrival_time;
             if (i == int(stop_times.size())-1) {
+
                 duration = 0;
+                next_stop_int = -1;
+                arrival_time = 0;
+                next_stop = -1;
             }
             else {
-                duration = stop_times[i+1] - stop_times[i];
+
+                arrival_time = stop_times[i+1];
+                duration = arrival_time - stop_times[i];
+                next_stop_int = stops_main[route_stop[i+1].stopId].int_id;
+                next_stop = route_stop[i+1].stopId;
             }
-            stops_main[stopid].trips.push_back(std::pair(stop_times[i],duration));
+
+            stops_main[stopid].trips.push_back(std::tuple(stop_times[i],duration,next_stop));
+
             route_stop[i].trips.push_back(std::pair(stop_times[i],duration));
+
+            connections.push_back({stops_main[stopid].int_id,next_stop_int,stop_times[i],arrival_time});
         }
         return true;
     }
 }
 
+void Datastructures::connection_scan(std::vector<int>&track_connections, std::vector<Time>&earliest_arrival, int tgt) {
+    const Time INF = std::numeric_limits<Time>::max();
+
+    Time earliest = INF;
+    for (size_t i = 0; i < connections.size(); i++) {
+        Connection connection = connections[i];
+
+        if (connection.src_ts >= earliest_arrival[connection.src] && 
+            connection.tgt_ts < earliest_arrival[connection.tgt]) {
+
+            earliest_arrival[connection.tgt] = connection.tgt_ts;
+            track_connections[connection.tgt] = i;
+            if (connection.tgt == tgt) {
+                earliest = std::min(earliest,connection.tgt_ts);
+            } else if (connection.tgt_ts > earliest) {
+                return;
+            }
+        }
+    }
+
+}
 std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID routeid, StopID stopid)
 {
     // Replace this comment and the line below with your implementation
-    if (routes_main.find(routeid) == routes_main.end())
+    if (routes_main.find(routeid) == routes_main.end() || stops_main.find(stopid) == stops_main.end())
         return {{NO_TIME, NO_DURATION}};
     else {
         std::vector<RouteStop> route_stop = routes_main[routeid];
@@ -666,13 +708,6 @@ std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID 
             route_stop.end(),
             [stopid](const RouteStop& item) //you want to compare an item
                 {return item.stopId == stopid; } );
-
-//        for (auto r:route_stop) {
-//            if (r.stopId == stopid) {
-//                std::vector<std::pair<Time,Duration>> trip = r.trips;
-//                route_time.insert(route_time.end(),trip.begin(),trip.end());
-//            }
-//        }
         if (it == route_stop.end())
             return {{NO_TIME, NO_DURATION}};
         else {
@@ -685,7 +720,51 @@ std::vector<std::pair<Time, Duration>> Datastructures::route_times_from(RouteID 
 std::vector<std::tuple<StopID, RouteID, Time> > Datastructures::journey_earliest_arrival(StopID fromstop, StopID tostop, Time starttime)
 {
     // Replace this comment and the line below with your implementation
-    return {{NO_STOP, NO_ROUTE, NO_TIME}};
+    if (stops_main.find(fromstop) == stops_main.end() || stops_main.find(tostop) == stops_main.end())
+        return {{NO_STOP, NO_ROUTE, NO_TIME}};
+    else {
+        if (!sorted_ts) {
+            std::sort(connections.begin(),connections.end(),
+                      [this] (Connection lhs, Connection rhs) { return sortConnection(lhs,rhs); });
+            sorted_ts = true;
+        }
+        std::vector<std::tuple<StopID, RouteID, Time> > journey;
+
+        std::vector<int> track_connections;
+        std::vector<Time> earliest_arrival;
+        const int INF = std::numeric_limits<int>::max();
+
+        track_connections.assign(V,INF);
+        earliest_arrival.assign(V,INF);
+        int s = stops_main[fromstop].int_id;
+        int t = stops_main[tostop].int_id;
+
+        earliest_arrival[s] = starttime;
+        if (s <= V && t <= V)
+            connection_scan(track_connections,earliest_arrival,t);
+        if (track_connections[t] != INF) {
+            int i = track_connections[t];
+
+            StopID src_stop = all_stop[connections[i].src];
+            StopID tgt_stop = all_stop[connections[i].tgt];
+
+            RouteID routeId;
+            journey.push_back({tgt_stop,NO_ROUTE,connections[i].tgt_ts});
+            while (i != INF) {
+                Connection c = connections[i];
+                src_stop = all_stop[c.src];
+                tgt_stop = all_stop[c.tgt];
+
+                routeId = stops_main[src_stop].next_stop[tgt_stop];
+
+                journey.push_back({src_stop,routeId,connections[i].src_ts});
+                i = track_connections[c.src];
+            }
+
+            std::reverse(journey.begin(),journey.end());
+        }
+        return journey;
+    }
 }
 
 void Datastructures::add_walking_connections()

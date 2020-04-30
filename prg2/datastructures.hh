@@ -272,8 +272,7 @@ private:
         RegionNode* main_region; //direct region that contains the stop
         std::vector<RouteStop> routes;
         std::unordered_map<StopID,RouteID> next_stop;
-        std::vector<std::pair<Time,Duration>>trips;
-
+        std::vector<std::tuple<Time,Duration,StopID>>trips;
     };
 
     // Region's information. This is similar to sibling-child tree representation, but adding parent node
@@ -313,16 +312,22 @@ private:
 
     struct AstarNode {
         int id;
-        double dist_g;
-        double dist_h;
         double dist_f;
-        int parent;
+        Time time;
     };
+
+
     struct compare{
         bool operator() (const AstarNode& lhs,const AstarNode& rhs ){
              return (lhs.dist_f > rhs.dist_f);
         }
     };
+
+    struct Connection {
+        int src,tgt;
+        Time src_ts, tgt_ts;
+    };
+    std::vector<Connection> connections;
 
     std::unordered_map<RouteID,std::vector<RouteStop>>routes_main;
     int V = 0;
@@ -345,9 +350,18 @@ private:
     inline double heuristic(Coord a, Coord b) {
       return std::abs(a.x - b.x) + std::abs(a.y - b.y);
     }
+    inline bool sortConnection(const Connection &lhs, const Connection &rhs) {
+        // sorting by distance to origin
+        if (int(lhs.src_ts) < int(rhs.src_ts)) {
+            return true;}
+        else {return false; }
+    }
+
 
     void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, bool *visited, StopID tgt,
                 vector<vector<int>> &adj_list,double *dist_f,double *dist_g,double *dist_h, int *s_parent, int& found);
+    void connection_scan(std::vector<int>&in_connections, std::vector<Time>&earliest_arrival, int tgt);
+    bool sorted_ts = false;
 };
 
 #endif // DATASTRUCTURES_HH
