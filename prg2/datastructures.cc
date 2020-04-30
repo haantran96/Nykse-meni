@@ -586,7 +586,6 @@ void Datastructures::A_star2(priority_queue<AstarNode, vector<AstarNode>, compar
     queue->pop();
 
     node[current.id].visited = true;
-    cout << node[current.id].visited << endl;
    // cout << "visiting " << all_stop[current.id] << " " <<dist_f[current.id]<< endl;
     if (current.id == stops_main[tgt].int_id) {
         found = current.id;
@@ -604,7 +603,7 @@ void Datastructures::A_star2(priority_queue<AstarNode, vector<AstarNode>, compar
                 node[*i].dist_f = dst_g+dst_h;
                 node[*i].dist_g = dst_g;
 //                dist_h[*i] = dst_h;
-                node[*i].dist_g = current.id;
+                node[*i].s_parent = current.id;
             }
             //cout << all_stop[*i] << " " << dst_g << " " << dst_h << endl;
             queue->push({*i,dst_g+dst_h,{}});
@@ -620,51 +619,74 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
     else {
         int s = stops_main[fromstop].int_id;
         int t = stops_main[tostop].int_id;
-        bool s_visited[V];
+//        bool s_visited[V];
 
-        double dist_f[V];
+//        double dist_f[V];
 
-        double dist_g[V];
+//        double dist_g[V];
 
 
-        int s_parent[V];
+//        int s_parent[V];
 
-        for(int i=0; i<V; i++)
-        {
-            s_visited[i] = false;
-            dist_f[i] = infinity;
-            dist_g[i] = 0;
-        }
+//        for(int i=0; i<V; i++)
+//        {
+//            s_visited[i] = false;
+//            dist_f[i] = infinity;
+//            dist_g[i] = 0;
+//        }
+
+//        Coord src = stops_main[s].coord;
+//        Coord tgt = stops_main[t].coord;
+
+//       // queue for front and backward search
+//        std::priority_queue<AstarNode, vector<AstarNode>, compare> s_queue;
+
+//        s_queue.push({s,eucl_distance(src,tgt),{}});
+//        s_visited[s] = true;
+//        s_parent[s]= -1;
+//        int found = -1;
+//        std::vector<std::tuple<StopID, RouteID, Distance>>journey;
+
+//        while (!s_queue.empty()) {
+//            A_star(&s_queue,s_visited,tostop,adjacency_list,dist_f,dist_g,s_parent,found);
+//            if (found != -1)
+//                break;
+//        }
+        std::priority_queue<AstarNode, vector<AstarNode>, compare> s_queue;
+        std::vector<std::tuple<StopID, RouteID, Distance>>journey;
 
         Coord src = stops_main[s].coord;
         Coord tgt = stops_main[t].coord;
-
-       // queue for front and backward search
-        std::priority_queue<AstarNode, vector<AstarNode>, compare> s_queue;
+        int found = -1;
+        Astar_dist nodes[V];
+        for(int i=0; i<V; i++)
+        {
+            nodes[i].visited = false;
+            nodes[i].dist_f = infinity;
+            nodes[i].dist_g = 0;
+        }
 
         s_queue.push({s,eucl_distance(src,tgt),{}});
-        s_visited[s] = true;
-        s_parent[s]= -1;
-        int found = -1;
-        std::vector<std::tuple<StopID, RouteID, Distance>>journey;
-
+        nodes[s].visited = true;
+        nodes[s].s_parent = -1;
         while (!s_queue.empty()) {
-            A_star(&s_queue,s_visited,tostop,adjacency_list,dist_f,dist_g,s_parent,found);
+            A_star2(&s_queue,tostop, adjacency_list, nodes, found);
             if (found != -1)
                 break;
         }
 
+
         if (found != -1) {
-            journey.push_back({all_stop[found],NO_ROUTE,dist_g[found]});
+            journey.push_back({all_stop[found],NO_ROUTE,nodes[found].dist_g});
             int i =found;
             while (i!=s) {
-                int temp = s_parent[i];
+                int temp = nodes[i].s_parent;
                 StopID curr = all_stop[i];
                 StopID par = all_stop[temp];
                 RouteID routeId = stops_main[par].next_stop[curr];
-                journey.push_back({all_stop[temp],routeId,dist_g[temp]});
+                journey.push_back({all_stop[temp],routeId,nodes[temp].dist_g});
 
-                i = s_parent[i];
+                i = nodes[i].s_parent;
             }
             std::reverse(journey.begin(),journey.end());
         }

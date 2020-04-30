@@ -316,7 +316,6 @@ private:
         Time time;
     };
     struct Astar_dist {
-        int id;
         double dist_g;
         double dist_f;
         int s_parent;
