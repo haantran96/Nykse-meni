@@ -313,6 +313,7 @@ private:
     struct AstarNode {
         int id;
         double dist_f;
+        int num_nodes;
     };
     struct Astar_dist {
         double dist_g;
@@ -320,6 +321,13 @@ private:
         int s_parent;
         bool visited;
     };
+    struct Astar_stops {
+        double dist_g;
+        int s_parent;
+        int num_nodes;
+        bool visited;
+    };
+
 
     struct Graph {
         Distance dist_g;
@@ -332,6 +340,16 @@ private:
              return (lhs.dist_f > rhs.dist_f);
         }
     };
+
+    struct compare_leaststop{
+        bool operator() (const AstarNode& lhs,const AstarNode& rhs ){
+            return lhs.num_nodes*10000+lhs.dist_f > rhs.num_nodes*10000+rhs.dist_f;
+//             if (lhs.num_nodes >= rhs.num_nodes) {return true;}
+//             else if (lhs.num_nodes < rhs.num_nodes) { return false;}
+//             else {return lhs.dist_f > rhs.dist_f;}
+        }
+    };
+
 
     struct Connection {
         int src;
@@ -349,13 +367,8 @@ private:
     vector<vector<int>> adj_list_back;
 
     vector<RouteID>connection_routes;
-    int isIntersecting(bool *s_visited, bool *t_visited);
     void addEdge(int u, int v);
-    std::vector<int> printPath(int *s_parent, int *t_parent, int s,
-                             int t, int intersectNode);
-    void BFS(list<int> *queue, bool *visited, int *parent,vector<vector<int>> &adj_list);
 
-    vector<int> biDirSearch(int s, int t);
     void DFS(list<int>*queue, Graph* nodes, int& found,int&found_parent, int& final_dist);
 
     inline double heuristic(Coord a, Coord b) {
@@ -368,10 +381,15 @@ private:
 
 
     void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, StopID tgt,
-                vector<vector<int>> &adj_list, Astar_dist* node, int& found);
+                vector<vector<int>> &adj_list, std::vector<Astar_dist>& node, int multiplier);
+
+    void Astar_leaststop(priority_queue<AstarNode, vector<AstarNode>, compare_leaststop> *queue, StopID tgt,
+                        vector<vector<int>> &adj_list, Astar_stops* node, int& found);
 
     void connection_scan(std::vector<int>&in_connections, std::vector<Time>&earliest_arrival, int tgt);
     bool sorted_ts = false;
+
+    int intersection_node(std::vector<Astar_dist>& s_nodes, std::vector<Astar_dist>& t_nodes);
 };
 
 #endif // DATASTRUCTURES_HH
