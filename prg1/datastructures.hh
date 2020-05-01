@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <unordered_map>
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 #include <functional>
 #include <deque>
 

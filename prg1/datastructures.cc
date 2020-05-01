@@ -12,6 +12,7 @@
 #include <cmath>
 #include <functional>
 #include <stdexcept>
+
 std::minstd_rand rand_engine; // Reasonably quick pseudo-random generator
 
 template <typename Type>
