@@ -210,6 +210,9 @@ RegionID Datastructures::stops_common_region(StopID id1, StopID id2)
 std::vector<RouteID> Datastructures::all_routes()
 {
     // Replace this comment and the line below with your implementation
+    if (routes_main.size()==0) {
+        return {};
+    }
     std::vector<RouteID> all_route;
     for (auto r:routes_main) {
         all_route.push_back(r.first);
@@ -238,17 +241,20 @@ bool Datastructures::add_route(RouteID id, std::vector<StopID> stops)
 
     std::vector<RouteStop> stop_info;
     int stop_counts = int(stops.size());
+
     for (int i=0; i < stop_counts;i++) {
         if (stops_main.find(stops[i]) == stops_main.end())
              return false;
         RouteStop route_stop = {id,stops[i],i,{}};
         stop_info.push_back(route_stop);
         stops_main[stops[i]].routes.push_back(route_stop);
+
         if (i != stop_counts-1) {
             stops_main[stops[i]].next_stop.insert(std::pair(stops[i+1],id));
             int src = stops_main[stops[i]].int_id;
             int dest = stops_main[stops[i+1]].int_id;
             addEdge(src,dest);
+
         }
     }
     routes_main[id] = stop_info;
@@ -274,6 +280,9 @@ std::vector<std::pair<RouteID, StopID>> Datastructures::routes_from(StopID stopi
 std::vector<StopID> Datastructures::route_stops(RouteID id)
 {
     // Replace this comment and the line below with your implementation
+    if (routes_main.size() == 0)
+        return {};
+
     std::vector<StopID> route_stop;
     if (routes_main.find(id) == routes_main.end())
         return {NO_STOP};
@@ -294,50 +303,15 @@ void Datastructures::clear_routes()
 
     routes_main.clear();
     connections.clear();
-    connection_routes.clear();
     adjacency_list.clear();
     adj_list_back.clear();
     sorted_ts = false;
-}
+    adjacency_list.resize(V);
+    adj_list_back.resize(V);
 
-int Datastructures::intersection_node(std::vector<Astar_dist>& s_nodes, std::vector<Astar_dist>& t_nodes)
-{
-    for (int i=0; i< V; i++) {
-        if (s_nodes[i].visited && t_nodes[i].visited)
-            return i;
-    }
-    return -1;
 }
 
 
-void Datastructures::Astar_leaststop(priority_queue<AstarNode, vector<AstarNode>, compare_leaststop> *queue,
-                                     StopID tgt, vector<vector<int> > &adj_list, Astar_stops *node, int &found)
-{
-    AstarNode current = queue->top();
-    queue->pop();
-    if (current.id == stops_main[tgt].int_id) {
-        found = current.id;
-        return;
-    }
-    node[current.id].visited = true;
-    for (auto i=adj_list[current.id].begin(); i!=adj_list[current.id].end(); i++) {
-        if (!node[*i].visited) {
-            int parent = current.id;
-            double dst_f = node[parent].dist_g + calculateDistance(tgt,all_stop[*i]);
-            double dst_g = node[parent].dist_g + calculateDistance(all_stop[parent],all_stop[*i]);
-            //cout << all_stop[*i] << " " << dst_g << endl;
-
-            int nodes = node[parent].num_nodes + 1;
-            if (node[*i].num_nodes > nodes ) {
-                node[*i].num_nodes = nodes;
-                //node[*i].dist_f = dst_f;
-                node[*i].dist_g = dst_g;
-                node[*i].s_parent = parent;
-            }
-            queue->push({*i,dst_f,nodes});
-        }
-    }
-}
 
 void Datastructures::A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, StopID tgt,
                             vector<vector<int> > &adj_list, std::vector<Astar_dist>&node, int multiplier)
@@ -346,10 +320,10 @@ void Datastructures::A_star(priority_queue<AstarNode, vector<AstarNode>, compare
     queue->pop();
 
     node[current.id].visited = true;
+//    cout << "visiting " << all_stop[current.id] << endl;
     if (current.id == stops_main[tgt].int_id) {
         return;
     }
-
     for (auto i=adj_list[current.id].begin(); i!=adj_list[current.id].end(); i++) {
         if (!node[*i].visited) {
             int parent = current.id;
@@ -413,6 +387,7 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(S
         while (!s_queue.empty() && !t_queue.empty()) {
             A_star(&s_queue,tostop, adjacency_list, s_nodes,multiplier);
             A_star(&t_queue,fromstop, adj_list_back, t_nodes,multiplier);
+//            cout << "check intersection " << endl;
             intersection = intersection_node(s_nodes, t_nodes);
 
             if (intersection != -1) {
@@ -451,9 +426,123 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_any(S
     }
 }
 
+void Datastructures::Astar_leaststop(priority_queue<AstarNode, vector<AstarNode>, compare_leaststop> *queue, StopID tgt,
+                                     vector<vector<int>> &adj_list, std::vector<Astar_stops>& node)
+{
+    AstarNode current = queue->top();
+    queue->pop();
+    if (current.id == stops_main[tgt].int_id) {
+        return;
+    }
+    node[current.id].visited = true;
+    for (auto i=adj_list[current.id].begin(); i!=adj_list[current.id].end(); i++) {
+        if (!node[*i].visited) {
+            int parent = current.id;
+            double dst_f = calculateDistance(tgt,all_stop[*i]);
+            double dst_g = node[parent].dist_g + calculateDistance(all_stop[parent],all_stop[*i]);
+
+            int nodes = node[parent].num_nodes + 1;
+
+            if (node[*i].num_nodes > nodes ) {
+                node[*i].num_nodes = nodes;
+                node[*i].dist_g = dst_g;
+                node[*i].s_parent = parent;
+            }
+            queue->push({*i,dst_f,nodes});
+        }
+    }
+}
+
 std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_least_stops(StopID fromstop, StopID tostop)
 {
-    return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
+    if (stops_main.find(fromstop) == stops_main.end() || stops_main.find(tostop) == stops_main.end())
+        return {{NO_STOP, NO_ROUTE, NO_DISTANCE}};
+    else {
+        int s = stops_main[fromstop].int_id;
+        int t = stops_main[tostop].int_id;
+        std::priority_queue<AstarNode, vector<AstarNode>, compare_leaststop> s_queue;
+        std::priority_queue<AstarNode, vector<AstarNode>, compare_leaststop> t_queue;
+
+        std::vector<std::tuple<StopID, RouteID, Distance>>journey;
+
+        std::vector<Astar_stops> s_nodes;
+        std::vector<Astar_stops> t_nodes;
+
+        s_nodes.resize(V);
+        t_nodes.resize(V);
+
+        for(int i=0; i<V; i++)
+        {
+            s_nodes[i].visited = false;
+            s_nodes[i].dist_g = infinity;
+            s_nodes[i].num_nodes = infinity;
+
+            t_nodes[i].visited = false;
+            t_nodes[i].dist_g = infinity;
+            t_nodes[i].num_nodes = infinity;
+
+        }
+
+        s_queue.push({s, 0,0});
+        s_nodes[s].visited = true;
+        s_nodes[s].s_parent = -1;
+        s_nodes[s].num_nodes = 0;
+        s_nodes[s].dist_g = 0;
+
+        t_queue.push({t,0,0});
+        t_nodes[t].visited = true;
+        t_nodes[t].s_parent = -1;
+        t_nodes[t].num_nodes = 0;
+        t_nodes[t].dist_g = 0;
+
+
+        int intersection = -1;
+
+        while (!s_queue.empty() && !t_queue.empty()) {
+            Astar_leaststop(&s_queue,tostop, adjacency_list, s_nodes);
+            Astar_leaststop(&t_queue,fromstop, adj_list_back, t_nodes);
+            intersection = intersection_node(s_nodes, t_nodes);
+
+            if (intersection != -1) {
+                RouteID routeId;
+                StopID curr,par;
+                int i = intersection;
+                int temp;
+                while (i != s) {
+                    temp = s_nodes[i].s_parent;
+                    curr = all_stop[i];
+                    par = all_stop[temp];
+                    routeId = stops_main[par].next_stop[curr];
+                    journey.push_back({all_stop[temp],routeId,s_nodes[temp].dist_g});
+                    i = s_nodes[i].s_parent;
+                }
+                std::reverse(journey.begin(),journey.end());
+
+                int dist = s_nodes[intersection].dist_g;
+
+                i = intersection;
+                while (i != -1) {
+                    temp = t_nodes[i].s_parent;
+
+                    curr = all_stop[i];
+
+                    par = all_stop[temp];
+                    if (t_nodes[i].s_parent == -1) {
+                        routeId = NO_ROUTE;
+                    } else {
+                        routeId = stops_main[curr].next_stop[par];
+                    }
+                    journey.push_back({curr,routeId,dist});
+                    dist += calculateDistance(curr,par);
+
+                    i = t_nodes[i].s_parent;
+                }
+                break;
+            }
+
+        }
+       return journey;
+    }
 
 }
 void Datastructures::DFS(list<int>*queue, Graph* nodes, int& found, int&found_parent, int& final_dist) {
@@ -589,10 +678,8 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
             if (intersection != -1) {
                 RouteID routeId;
                 StopID curr,par;
-                int temp = s_nodes[intersection].s_parent;
-                routeId = stops_main[all_stop[temp]].next_stop[all_stop[intersection]];
-                journey.push_back({all_stop[intersection],routeId,s_nodes[intersection].dist_g});
                 int i = intersection;
+                int temp;
                 while (i != s) {
                     temp = s_nodes[i].s_parent;
                     curr = all_stop[i];
@@ -603,22 +690,24 @@ std::vector<std::tuple<StopID, RouteID, Distance>> Datastructures::journey_short
                 }
                 std::reverse(journey.begin(),journey.end());
 
-                i = intersection;
                 int dist = s_nodes[intersection].dist_g;
-                temp = t_nodes[t_nodes[i].s_parent].s_parent;
-                while (i != t) {
+
+                i = intersection;
+                while (i != -1) {
+                    temp = t_nodes[i].s_parent;
+
                     curr = all_stop[i];
-                    par = all_stop[t_nodes[i].s_parent];
-                    if (t_nodes[i].s_parent == t) {
+
+                    par = all_stop[temp];
+                    if (t_nodes[i].s_parent == -1) {
                         routeId = NO_ROUTE;
                     } else {
-                        routeId = stops_main[par].next_stop[all_stop[temp]];
+                        routeId = stops_main[curr].next_stop[par];
                     }
-                    dist += calculateDistance(par,curr);
-                    journey.push_back({par,routeId,dist});
-                    i = t_nodes[i].s_parent;
-                    temp = t_nodes[t_nodes[i].s_parent].s_parent;
+                    journey.push_back({curr,routeId,dist});
+                    dist += calculateDistance(curr,par);
 
+                    i = t_nodes[i].s_parent;
                 }
                 break;
             }

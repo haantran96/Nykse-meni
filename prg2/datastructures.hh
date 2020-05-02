@@ -343,10 +343,9 @@ private:
 
     struct compare_leaststop{
         bool operator() (const AstarNode& lhs,const AstarNode& rhs ){
-            return lhs.num_nodes*10000+lhs.dist_f > rhs.num_nodes*10000+rhs.dist_f;
-//             if (lhs.num_nodes >= rhs.num_nodes) {return true;}
-//             else if (lhs.num_nodes < rhs.num_nodes) { return false;}
-//             else {return lhs.dist_f > rhs.dist_f;}
+          if (lhs.num_nodes > rhs.num_nodes) {return true;}
+             else if (lhs.num_nodes < rhs.num_nodes) { return false;}
+             else {return lhs.dist_f > rhs.dist_f;}
         }
     };
 
@@ -384,12 +383,23 @@ private:
                 vector<vector<int>> &adj_list, std::vector<Astar_dist>& node, int multiplier);
 
     void Astar_leaststop(priority_queue<AstarNode, vector<AstarNode>, compare_leaststop> *queue, StopID tgt,
-                        vector<vector<int>> &adj_list, Astar_stops* node, int& found);
+                        vector<vector<int>> &adj_list, std::vector<Astar_stops>& node);
 
     void connection_scan(std::vector<int>&in_connections, std::vector<Time>&earliest_arrival, int tgt);
     bool sorted_ts = false;
 
-    int intersection_node(std::vector<Astar_dist>& s_nodes, std::vector<Astar_dist>& t_nodes);
+    template <class AstarType>
+
+    int intersection_node(std::vector<AstarType>& s_nodes, std::vector<AstarType>& t_nodes)
+    {
+        for (int i=0; i< V; i++) {
+            if (s_nodes[i].visited && t_nodes[i].visited) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
 };
 
 #endif // DATASTRUCTURES_HH
