@@ -271,20 +271,6 @@ private:
         std::vector<std::tuple<Time,Duration,StopID>>trips;
     };
 
-    // Region's information. This is similar to sibling-child tree representation, but adding parent node
-    std::unordered_map<StopID,BusStop> stops_main;
-    std::vector<StopID> all_stop;
-
-    Distance calculateDistance(StopID lhs, StopID rhs) {
-        double dist = pow(stops_main[lhs].coord.x - stops_main[rhs].coord.x,2) + pow(stops_main[lhs].coord.y - stops_main[rhs].coord.y,2);
-        return int(sqrt(dist));
-    }
-
-    double eucl_distance(Coord lhs, Coord rhs) {
-        double dist = pow(lhs.x - rhs.x,2) + pow(lhs.y - rhs.y,2);
-        return int(sqrt(dist));
-    }
-
     struct AstarNode {
         int id;
         double dist_f;
@@ -333,6 +319,9 @@ private:
         int route_track;
     };
 
+    std::unordered_map<StopID,BusStop> stops_main;
+    std::vector<StopID> all_stop;
+
     std::vector<Connection> connections;
 
     std::unordered_map<RouteID,std::vector<RouteStop>>routes_main;
@@ -371,6 +360,19 @@ private:
         }
         return -1;
     }
+
+    Distance calculateDistance(StopID lhs, StopID rhs) {
+        double dist = pow(stops_main[lhs].coord.x - stops_main[rhs].coord.x,2) + pow(stops_main[lhs].coord.y - stops_main[rhs].coord.y,2);
+        return int(sqrt(dist));
+    }
+
+    double eucl_distance(Coord lhs, Coord rhs) {
+        double dist = pow(lhs.x - rhs.x,2) + pow(lhs.y - rhs.y,2);
+        return int(sqrt(dist));
+    }
+
+
+
 
 };
 
