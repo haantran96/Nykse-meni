@@ -1,6 +1,8 @@
 ## datastructures.hh
 
-**Note**: In my implementation, the bus will have 2 IDs: the given StopID from the program, and an Integer ID. The Integer ID is determined by the time a stop is added by calling add_stop (i.e: if the stop is the 10th stop added by the program, Integer ID = 10). The reason for Integer ID is for easier implementation of my adjacency list, which stores stops, and linked stops to them (similar to a Hash Table)
+**Note**: In my implementation, the bus will have 2 IDs: the given StopID from the program, and an Integer ID. The Integer ID is determined by the time a stop is added by calling 
+add_stop (i.e: if the stop is the 10th stop added by the program, Integer ID = 10). The reason for Integer ID is for easier implementation of my adjacency list, 
+which stores stops, and linked stops to them (similar to a Hash Table)
     
     struct BusStop {
         StopID id;
@@ -19,7 +21,8 @@
         int index;
         std::vector<std::pair<Time,Duration>>trips;
     }; 
-    --> Link a Route and Stop. It stores a RouteID, StopID, the position of a stop in a route (index) and related trips. To clarify about variable index: if add_route A 1 3 4, then index of 1 is 0, 3 is 1 and 4 is 2.
+    --> Link a Route and Stop. It stores a RouteID, StopID, the position of a stop in a route (index) and related trips. To clarify about variable index: if add_route A 1 3 4, 
+    then index of 1 is 0, 3 is 1 and 4 is 2.
     
     struct Graph {
         Distance dist_g;
@@ -170,71 +173,73 @@
 
 
 ## datastructures.hh
--journey_any, journey_shortest_distance: Time complexity: O(b^d/2), where b is the branching factor.
-*I use Bi-directional A star search. The time complexity of a single A star is O(b^d), and using 2 A star gives O(b^d/2)
-*Single A star:
-    + We use priority queue to choose the nodes to visited next. top(), pop() and push() operations takes O(logn) time in priority queue
-    + Get and remove the first element of the priority queue.
-    + Go through the element's neighbours. For each, I compute the following distances
-        dist_g: added distance from the origin
-        dist_h:  euclidean distance to the target, rounded to integer. For journey_shortest_distance, I divide dist_h by a multiplier (3) because I want dist_g to be more important factor to consider the shortest distance
-        dist_f: dist_g + dist_h
-    + If the calculated dist_f is smaller than the visited node's dist_f, we replace the node's dist_g, dist_f and parent nodes
-    + Push the node into the priority queue (takes O(logn))
-*I run single A star algorithm from 2 sides (from origin and from destination). Then, find the intersection stop of 2 algorithms and stop when the intersection is found.
-*Reconstruct the path from the intersection node.
-
--journey_least_stops: Time complexity: O(b^d/2), where b is the branching factor.
-    + Similarly I use Bi-directional A star search, but different comparison rule to push into priority queue. 
-    The time complexity of a single A star is O(b^d), and using 2 A star gives O(b^d/2)
-    + We use priority queue to choose the nodes to visited next. top(), pop() and push() operations takes O(logn) time in priority queue
-    + Get and remove the first element of the priority queue.
-    + Go through the element's neighbours. For each, I compute the following parameters:
-        dist_g: added distance from the origin
-        dist_h:  euclidean distance to the target, rounded to integer. For journey_shortest_distance, I divide dist_h by a multiplier (3) because I want dist_g to be more important factor to consider the shortest distance
-        dist_f: dist_g + dist_h
-        num_nodes: number of stops that parent stop has passed throuh +1
-    + If the number of nodes is smaller than the visited node's num_nodes, we replace the node's dist_g, num_nodes and parent nodes
-    + Push the node into the priority queue (takes O(logn))
-*I run single A star algorithm from 2 sides (from origin and from destination). Then, find the intersection stop of 2 algorithms and stop when the intersection is found.
-*Reconstruct the path from the intersection node.
-
--journey_earliest_arrival: Time complexity: O(n) with n is the number of all connections
-    +I used connection scan algorithm (https://arxiv.org/abs/1703.05997)
-    + First, sort all connections by departure time (O(nlogn))
-    + For each visited node:
-        -if the departure time > earliest departure time of the stop and arrival time < earliest arrival time of the stop
-        -record the new arrival time of this stop
-        -if the target is found: the earliest arrival should be the min of the recorded earliest and the target arrival time
-
-**Minor optimizations:**
--For easier implementation of adjacency list and adjacency list backwards, I converted all StopID to an integer ID. For example: if the stop is added 10th time, then its integer ID is 10. Then, I use all_stop vector to retrieve back the StopID
--Also, I found major difference when sorting 2 vectors of different struct:
-```
-    struct Connection1 {
-        int src;
-        int tgt;
-        Time src_ts;
-        Time tgt_ts;
-        int route_track;
-    };
+    -journey_any, journey_shortest_distance: Time complexity: O(b^d/2), where b is the branching factor.
+    *I use Bi-directional A star search. The time complexity of a single A star is O(b^d), and using 2 A star gives O(b^d/2)
+    *Single A star:
+        + We use priority queue to choose the nodes to visited next. top(), pop() and push() operations takes O(logn) time in priority queue
+        + Get and remove the first element of the priority queue.
+        + Go through the element's neighbours. For each, I compute the following distances
+            dist_g: added distance from the origin
+            dist_h:  euclidean distance to the target, rounded to integer. For journey_shortest_distance, I divide dist_h by a multiplier (3) because I want dist_g to be more important factor 
+            to consider the shortest distance
+            dist_f: dist_g + dist_h
+        + If the calculated dist_f is smaller than the visited node's dist_f, we replace the node's dist_g, dist_f and parent nodes
+        + Push the node into the priority queue (takes O(logn))
+    *I run single A star algorithm from 2 sides (from origin and from destination). Then, find the intersection stop of 2 algorithms and stop when the intersection is found.
+    *Reconstruct the path from the intersection node.
     
-    std::vector<Connection1> vect1;
-    struct Connection2 {
-        int src;
-        int tgt;
-        Time src_ts;
-        Time tgt_ts;
-        RouteID route; //RouteID is string
-    };
-    std::vector <Connection2> vect2
-```
-Sorting 2 vectors based on src_ts of vect2 takes 4.4 times longer than vect1 (assuming both vectors have >100k elements). Hence, I also converted RouteID to an integer ID, and then use connection_routes vector to retrieve back the RouteID. This seems not very neat, but improves my performance a lot.
-
-## Performance test
-I run perftest-all.txt in TUNI linux machine and get these results:
-[release build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg2/perftest-release.txt)
-[debug build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg2/perftest-debug.txt)
-
--For most operatation tests (except journey_any), I achieved the same level of performance.
-
+    -journey_least_stops: Time complexity: O(b^d/2), where b is the branching factor.
+        + Similarly I use Bi-directional A star search, but different comparison rule to push into priority queue. 
+        The time complexity of a single A star is O(b^d), and using 2 A star gives O(b^d/2)
+        + We use priority queue to choose the nodes to visited next. top(), pop() and push() operations takes O(logn) time in priority queue
+        + Get and remove the first element of the priority queue.
+        + Go through the element's neighbours. For each, I compute the following parameters:
+            dist_g: added distance from the origin
+            dist_h:  euclidean distance to the target, rounded to integer.
+            dist_f: dist_g + dist_h
+            num_nodes: number of stops that parent stop has passed throuh +1
+        + If the number of nodes is smaller than the visited node's num_nodes, we replace the node's dist_g, num_nodes and parent nodes
+        + Push the node into the priority queue (takes O(logn))
+    *I run single A star algorithm from 2 sides (from origin and from destination). Then, find the intersection stop of 2 algorithms and stop when the intersection is found.
+    *Reconstruct the path from the intersection node.
+    
+    -journey_earliest_arrival: Time complexity: O(n) with n is the number of all connections
+        +I used connection scan algorithm (https://arxiv.org/abs/1703.05997)
+        + First, sort all connections by departure time (O(nlogn))
+        + For each visited node:
+            -if the departure time > earliest departure time of the stop and arrival time < earliest arrival time of the stop
+            -record the new arrival time of this stop
+            -if the target is found: the earliest arrival should be the min of the recorded earliest and the target arrival time
+    
+    **Minor optimizations:**
+    -For easier implementation of adjacency list and adjacency list backwards, I converted all StopID to an integer ID. For example: if the stop is added 10th time, then its integer ID is 10. 
+    Then, I use all_stop vector to retrieve back the StopID
+    -Also, I found major difference when sorting 2 vectors of different struct:
+    ```
+        struct Connection1 {
+            int src;
+            int tgt;
+            Time src_ts;
+            Time tgt_ts;
+            int route_track;
+        };
+        
+        std::vector<Connection1> vect1;
+        struct Connection2 {
+            int src;
+            int tgt;
+            Time src_ts;
+            Time tgt_ts;
+            RouteID route; //RouteID is string
+        };
+        std::vector <Connection2> vect2
+    ```
+    Sorting 2 vectors based on src_ts of vect2 takes 4.4 times longer than vect1 (assuming both vectors have >100k elements). Hence, I also converted RouteID to an integer ID, and then use connection_routes vector to retrieve back the RouteID. This seems not very neat, but improves my performance a lot.
+    
+    ## Performance test
+    I run perftest-all.txt in TUNI linux machine and get these results:
+    [release build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg2/perftest-release.txt)
+    [debug build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg2/perftest-debug.txt)
+    
+    -For most operatation tests (except journey_any), I achieved the same level of performance.
+    
