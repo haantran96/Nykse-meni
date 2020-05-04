@@ -1,174 +1,174 @@
-datastructures.hh
-struct RegionNode {
-    RegionID regionId;
-    Name regionName;
-    std::vector<StopID>stops;
-    RegionNode *child; // Child 
-    RegionNode *next; // Next Sibling
-    RegionNode *prev; // Previous sibling
-    RegionNode *parent; //Parent
-};
-    -> Store information of a region: RegionID, Name, vector of belong stops, pointers to next/previous siblings, parent and child nodes.
+## datastructures.hh
 
-struct BusStop {
-    StopID id;
-    Name name;
-    Coord coord;
-    double dist; // distance to origion
-    RegionNode* main_region;
-};
-    -> Store information of a stop: StopID, Name, Coordinate, distance to original, pointer to the region that directly has the stop.
-
-
-std::multimap<Name,StopID>name_stop;
-std::multimap<double,StopID>new_coord;
-    -> Multimaps that contain the Name/Distance to origins as key and StopID as values. When inserted, the names and distances are always sorted.
-
-std::unordered_map<StopID,BusStop> stops;
-    -> unordered_map with ID of the stop as key and BusStop struct as value -> Easy and fast to retrieve information with a given id
-
-std::vector<StopID> all_stop;
--> vector that contain all the stop IDs
-
-std::vector<StopID> stop_coord;
-std::vector<StopID> new_stop_coord;
-    -> Stop Ids in sorted order (based on coordinates) and of newly inserted stops. 
-    -> Instead of sorting all stops, I save the already sorted stops in 1 vector and only sort the newly inserted stops.
-    -> By this, we can save some time on the already sorted elements, which works a lot of stops are added (in the perftest-sorting function)
-    -> After sorting, new_stop_coord vector is cleared to empty again.
-
-std::vector<RegionID>allRegions;
-    -> vector contains all region IDs
-
-std::unordered_map<RegionID,RegionNode*> regions;
-    -> map that stores region ID as key and its information as values
-
-bool sorted_coord = true;
-    -> Because stop_coord is always sorted, this value is always true. However, when the coordinates of the stops are changed, set this to false.
-
-## Private functions:
-RegionNode *newNode (RegionID regionID, Name regionName): O(1)
-    create a new node for the region when it is added
+**Note**: In my implementation, the bus will have 2 IDs: the given StopID from the program, and an Integer ID. The Integer ID is determined by the time a stop is added by calling add_stop (i.e: if the stop is the 10th stop added by the program, Integer ID = 10). The reason for Integer ID is for easier implementation of my adjacency list, which stores stops, and linked stops to them (similar to a Hash Table)
     
-void traverseTree(RegionNode * root,std::vector<int>&x_coord,std::vector<int>&y_coord): O(n)
-    traverse through all children nodes from the root node and push the x and y coordinates to
-    Instead of recursion, I implement this using a stack (time complexity is same, but safer for memory)
+    struct BusStop {
+        StopID id;
+        int int_id;
+        Name name;
+        Coord coord;
+        std::vector<RouteStop> routes;
+        std::unordered_map<StopID,RouteID> next_stop;
+        std::vector<std::tuple<Time,Duration,StopID>>trips;
+    };
+    --> Store information of a Stop (StopID, Integer Id, Name, Coordinates, Routes, Infromation of Next Stop, Trips)
     
-inline bool sortByCoord: O(1)
-    sort the xy coordinates by distance to origin.
+    struct RouteStop {
+        RouteID routeId;
+        StopID stopId;
+        int index;
+        std::vector<std::pair<Time,Duration>>trips;
+    }; 
+    --> Link a Route and Stop. It stores a RouteID, StopID, the position of a stop in a route (index) and related trips. To clarify about variable index: if add_route A 1 3 4, then index of 1 is 0, 3 is 1 and 4 is 2.
     
-inline bool sortByName: O(1)
-    sort by name
-
-inline bool sortByDistance: O(1)
-    sort the xy coordinates by distance to another point.
+    struct Graph {
+        Distance dist_g;
+        int s_parent;
+        bool visited;
+    };
+    --> Implemented in journey_with_cylcle. 
+        dist_g: Aggregated distance of a stop from the source stop
+        s_parent: parent stop of a given stop.
+        visited: check if a stop is visited by the program
     
-std::vector<StopID> mergeSort(std::vector<StopID>&v1, std::vector<StopID>&v2, bool(Datastructures::*func)(const StopID&,const StopID&)): O(n)
-    merge 2 sorted vectors v1, v2 using merge sort algorithm
-    func is the function that defines the rules for sorting.
-
-datastructures.cc
--int stop_count() : O(1)
-    return size() of unordered_map
-
--void clear_all() : O(n)
-    removing multimaps, unordered_maps and vectors takes linear time complexity 
-
--std::vector<StopID> all_stops() : O(1)
-    return the all_stop vector
-
--bool add_stop(StopID id, Name const& name, Coord xy) : O(logn) for each new added stop
-    insert to unordered_map (stops) and multimap (name_stop, new_coord): O(logn)
-    push_back to vectors (all_stop, new_stop_coord): O(1)
-
--Name get_stop_name(StopID id) : O(1)
-    return value of an unordered_map with the key given
-
--Coord get_stop_coord(StopID id) : O(1)
-    return value of an unordered_map with the key given
+    struct AstarNode {
+        int id;
+        double dist_f;
+        int num_nodes;
+    };
+    --> Implemented in journey_with_cylcle: 
+        dist_g: Aggregated distance of a stop from the source stop
+        s_parent: parent stop of a given stop.
+        visited: check if a stop is visited by the program
         
--std::vector<StopID> stops_alphabetically() : O(n)
-    multimap name_stop already sorts the names alphabetically -> inserting StopIDs to a vector takes linear time.        
-
--std::vector<StopID> stops_coord_order() : O(nlogn)
-        + If coord_stop is unsorted (the coordinates are changed): sort again the coord_stop -> O(nlogn)
-        + Sort new_coord_stop -> O(nlogn)
-        + Merge 2 sorted vectors using mergeSort -> O(n1+n2), where n1 and n2 are sizes of coord_stop and new_coord_stop
-        -> Overall O(nlogn)
-        + After merging, clear the content of new_coord_stop -> O(n)
+    struct Astar_dist {
+        double dist_g;
+        double dist_f;
+        int s_parent;
+        bool visited;
+    };
+    --> Implemented in journey_shortest_distance:
+        dist_g: aggregated distance of a stop from the source stop
+        dist_f: dist_g + dist_h (dist_h: heuristic distance to target - Euclidean distance)
+        s_parent: parent stop of a given stop. 
+        visited: check if a stop is visited by the program
     
-StopID min_coord(), max_coord : O(n)
-    + If new_stop_coord.size() = 0 (the coordinates are sorted): return first/last values of coord_stop -> O(1) 
-    + Otherwise, find min/max distance to origin in the multimap (first/last element) -> O(1). 
-    + Then search for elements with the same distance in the multimap with equal_range -> O(logn)
-    + Iterate through the found iterators to the elements, compare the y coordinates between the found elements and get the ones with min/max y 
-        -> O(m) where m is the number of StopIDs with the same distance.
-    + Compare the min/max element of coord_stop and new_coord_stop.
-    
-std::vector<StopID> find_stops(Name const& name): O(logn+m) where m is the number of stops with the same name -> Overall O(n)
-    + Use equal_range to search for name in multimap name_stop -> O(logn)
-    + Iterate through the found iterators to the elements -> O(m), m is the number of found stops with the given name
-
-bool change_stop_name(StopID id, Name const& newname): O(n)
-    + Change stop name in unordered_map -> O(1)
-    + Change stop_name in multimap (searching takes O(n), then erase the element O(n), insert the new pair (name.id) (O(logn)): overall O(n)
-    
-bool change_stop_coord(StopID id, Coord newcoord) : O(n)
-    + Change stop coord in unordered_map -> O(1)
-    + Change stop coord in multimap -> O(n)
-    + Check if newcoord belongs to the already sorted array, if yes then set the boolean sorted_coord = false -> O(n)
-    
-bool add_region(RegionID id, Name const& name) : O(logn)
-    + Add the region to the unordered_map regions -> O(logn)
-    + Add the region ID to the vector allRegions -> O(1)
-    
-Name get_region_name(RegionID id) : O(1)
-    + return value of an unordered_map with the key given
-
-std::vector<RegionID> all_regions() : O(1)
-    + return allRegions vector
-    
-bool add_stop_to_region(StopID id, RegionID parentid): O(n)
-    + check if the stops and regions are existed in unordered_maps: O(1) on average
-    + check if the StopID is already added to the region: O(n) (search in vector)
-    + If not -> add to the vector and assign the region as the stops[id].main_region -> O(1)
-    
-bool add_subregion_to_region(RegionID id, RegionID parentid): O(n)
-    + Check if subregion and region are existed: O(1) on average
-    + Insert parent-child relationship to the regions. Two cases:
-        + If the parent region doesn't have a child -> O(1)
-        + If the parent region already have child/children 
-            -> Traverse through all the children and push the subregion to the last -> O(n) with n is the number of children of the region
+    struct Astar_stops {
+        double dist_g;
+        int s_parent;
+        int num_nodes;
+        bool visited;
+    };
+    --> Implemented in journey_least_stops
+        dist_g: aggregated distance of a stop from the source stop
+        s_parent: parent stop of a given stop. 
+        num_nodes: aggregated number of stops that a path passes     
+        visited: check if a stop is visited by the program
         
-std::vector<RegionID> stop_regions(StopID id): O(n)
-    + Find the main_region from the StopID -> O(1)
-    + From the found main_region node, traverse to its parents until reach NULL -> O(n) where n is the height from root to the found region
-
-void creation_finished();
-
-std::pair<Coord, Coord> region_bounding_box(RegionID id) : O(n)
-    + Find the region from unodered_map regions -> O(1) on average
-    + Traverse through its children (subregions) and push the x and y coordinates of the stops to x_coord and y_coord vectors -> O(n)
-    + Find min and max x, y coordinates with std::minmax_element-> O(n)
-    
-std::vector<StopID> stops_closest_to(StopID id): O(nlogn)
-    + Sort all stops based on the distances to the given stop: O(nlogn)
-    
-bool remove_stop(StopID id);
-    + Remove stop in the unodered_map stops: O(n)
-    + Remove stop in 2 multimaps name_stop and coord_stop/new_coord: O(n)
-    + Remove stop in all relevant vectors (stop_coord, new_stop_coord, all_stop): 
-        1) Find the stop id -> O(n)
-        2) swap the found iterator with the end() -> O(1)
-        3) Pop_back to remove the element -> O(1)
-        -> Overall the time complexity is linear, but I found out that this method takes faster time than the erase() method.
+    struct Connection {
+        int src;
+        int tgt;
+        Time src_ts;
+        Time tgt_ts;
+        int route_track;
+    };
+    --> Implemented in journey_least_arrival:
+        src, tgt: Integer ID of source and target stop
+        src_ts, tgt_ts: Departure and arrival time of a trip
+        route_track: integer ID of a connection. This is used to track RouteID of a certain trip.
         
+    struct compare{
+        bool operator() (const AstarNode& lhs,const AstarNode& rhs ){
+             return (lhs.dist_f > rhs.dist_f);
+        }
+    };
+    --> Comparator used in priority_queue for journey_shortest_distance and journey_any
     
-RegionID stops_common_region(StopID id1, StopID id2): O(n)
-    + Find vectors of regions+subregions with the given StopIDs using the above stop_regions(StopID) -> O(n)
-    + Use std::find_first_of the 2 vectors to find first common element -> worse case O(m*k) with m,k are sizes of the 2 vectors -> O(n) on average
+    struct compare_leaststop{
+        bool operator() (const AstarNode& lhs,const AstarNode& rhs ){
+          if (lhs.num_nodes > rhs.num_nodes) {return true;}
+             else if (lhs.num_nodes < rhs.num_nodes) { return false;}
+             else {return lhs.dist_f > rhs.dist_f;}
+        }
+    };
+    --> Comparator used in priority_queue for journey_least_stops
+    
+    inline bool sortConnection(const Connection &lhs, const Connection &rhs) {
+       return lhs.src_ts < rhs.src_ts;
+    }
+    -->
+    
+    bool sorted_ts = false;
+    
+    int V = 0;
+    int connection_count = 0;
+    --> V: Interger ID of Stops
+        connection_count: Integer ID of Connections
+    
+    std::unordered_map<StopID,BusStop> stops_main;
+    --> unordered_map with StopID as key and BusStop struct as value -> Easy and fast to retrieve information with a given id
+    
+    std::vector<StopID> all_stop;
+    --> vector that contains all the stop IDs. I use this to convert back from Integer ID to StopID
+    
+    std::unordered_map<RouteID,std::vector<RouteStop>>routes_main;
+    --> unordered_map with RouteID as key and vector of RouteStop struct as value -> Easy and fast to retrieve information with a given id
+    
+    std::vector<std::vector<int>> adjacency_list;
+    --> Adjacency list of Stops. This is similar to a hash table. For example: 1: [2, 3], 2: [3, 4].  
+    
+    
+    std::vector<std::vector<int>> adj_list_back;
+    --> Adjacency list of Stops, but backwards. (for bi-birectional search)
+    
+    std::vector<Connection> connections;
+    --> vector that contain all the stop IDs. I use this to convert back from Integer ID to RouteID of a stops
 
-Performance test
+    std::vector<RouteID>connection_routes;
+    --> Storing routes of each connection
+
+    void addEdge(int u, int v);
+    --> adding Edge to adjacency_list and adj_list_back. u and v are integer ID of the StopIDs.
+    
+    void DFS(list<int>*queue, std::vector<Graph>& nodes, int& found,int&found_parent, int& final_dist);
+    --> Depth first seach, used in journey_with_cycle. Time complexity: O(V+E) where V is number of vertices in the graph and E is number of edges in the graph
+    
+    void A_star(std::priority_queue<AstarNode, std::vector<AstarNode>, compare> *queue, StopID tgt,
+                std::vector<std::vector<int>> &adj_list, std::vector<Astar_dist>& node, int multiplier);
+    --> A star search, used in journey_with_distance. Time complexity: O(b^d), where b is the branching factor.
+    
+    void Astar_leaststop(std::priority_queue<AstarNode, std::vector<AstarNode>, compare_leaststop> *queue, StopID tgt,
+                        std::vector<std::vector<int>> &adj_list, std::vector<Astar_stops>& node);
+    --> A star search, used in journey_least_stops. Time complexity: O(b^d), where b is the branching factor.
+    
+    void connection_scan(std::vector<int>&track_connections, std::vector<Time>&earliest_arrival, int tgt,std::vector<Connection>& all_connections);
+    --> Connection scan algorithm, used in journey_earliest_arrival.
+    
+    
+    template <class AstarType>
+    int intersection_node(std::vector<AstarType>& s_nodes, std::vector<AstarType>& t_nodes)
+    {
+        for (int i=0; i< V; i++) {
+            if (s_nodes[i].visited && t_nodes[i].visited) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    --> Because I implemented A* search bi-directionally, this function finds the intersection point of 2 searches from fromstop and from tostop 
+    
+    Distance calculateDistance(StopID lhs, StopID rhs) {
+        double dist = pow(stops_main[lhs].coord.x - stops_main[rhs].coord.x,2) + pow(stops_main[lhs].coord.y - stops_main[rhs].coord.y,2);
+        return int(sqrt(dist));
+    }
+    double eucl_distance(Coord lhs, Coord rhs) {
+        double dist = pow(lhs.x - rhs.x,2) + pow(lhs.y - rhs.y,2);
+        return int(sqrt(dist));
+    }
+    --> Calculate Euclidean distance of 2 stops with StopID or Coordinates
+
+
+## Performance test
 I run perftest-all.txt in TUNI linux machine and get these results:
 [release build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg1/performance-release.txt)
 [debug build](https://course-gitlab.tuni.fi/tie-2010x_tiraka_dsa_2019-2020/an_tran/-/blob/master/prg1/performance-debug.txt)
