@@ -16,6 +16,13 @@
 #include <tuple>
 #include <queue>
 using namespace std;
+
+#include <string>
+#include <vector>
+#include <tuple>
+#include <utility>
+#include <limits>
+
 // Types for IDs
 using StopID = long int;
 using RegionID = std::string;
@@ -245,15 +252,6 @@ public:
 
 private:
     // Add stuff needed for your class implementation here
-    struct RegionNode {
-        RegionID regionId;
-        Name regionName;
-        std::vector<StopID>stops;
-        RegionNode *child; //child node
-        RegionNode *next;  //next sibling
-        RegionNode *prev;  //previous sibling
-        RegionNode *parent; //parent node
-    };
 
     struct RouteStop {
         RouteID routeId;
@@ -268,8 +266,6 @@ private:
         int int_id;
         Name name;
         Coord coord;
-        double dist; //distance to origin (0,0)
-        RegionNode* main_region; //direct region that contains the stop
         std::vector<RouteStop> routes;
         std::unordered_map<StopID,RouteID> next_stop;
         std::vector<std::tuple<Time,Duration,StopID>>trips;
@@ -278,26 +274,6 @@ private:
     // Region's information. This is similar to sibling-child tree representation, but adding parent node
     std::unordered_map<StopID,BusStop> stops_main;
     std::vector<StopID> all_stop;
-    std::vector<StopID> stop_coord;
-    std::vector<RegionID>allRegions;
-    std::unordered_map<RegionID,RegionNode*> regions;
-
-    bool sorted_coord = true;
-
-    RegionNode *newNode (RegionID regionID, Name regionName){
-        // Function to create new region node
-        RegionNode* node = new RegionNode();
-        node->regionId = regionID;
-        node->regionName = regionName;
-        node->stops = {};
-        node->child =  NULL;
-        node->next = NULL;
-        node->prev = NULL;
-        node->parent = NULL;
-        return node;
-      }
-
-
 
     Distance calculateDistance(StopID lhs, StopID rhs) {
         double dist = pow(stops_main[lhs].coord.x - stops_main[rhs].coord.x,2) + pow(stops_main[lhs].coord.y - stops_main[rhs].coord.y,2);
@@ -308,7 +284,6 @@ private:
         double dist = pow(lhs.x - rhs.x,2) + pow(lhs.y - rhs.y,2);
         return int(sqrt(dist));
     }
-    // PHASE II
 
     struct AstarNode {
         int id;
@@ -349,47 +324,44 @@ private:
         }
     };
 
-
     struct Connection {
         int src;
         int tgt;
         Time src_ts;
         Time tgt_ts;
-        RouteID routeId;
+        //RouteID routeId;
+        int route_track;
     };
+
     std::vector<Connection> connections;
 
     std::unordered_map<RouteID,std::vector<RouteStop>>routes_main;
     int V = 0;
+    int connection_count = 0;
 
-    vector<vector<int>> adjacency_list;
-    vector<vector<int>> adj_list_back;
 
-    vector<RouteID>connection_routes;
+    std::vector<std::vector<int>> adjacency_list;
+    std::vector<std::vector<int>> adj_list_back;
+
+    std::vector<RouteID>connection_routes;
     void addEdge(int u, int v);
 
-    void DFS(list<int>*queue, Graph* nodes, int& found,int&found_parent, int& final_dist);
+    void DFS(list<int>*queue, std::vector<Graph>& nodes, int& found,int&found_parent, int& final_dist);
 
-    inline double heuristic(Coord a, Coord b) {
-      return std::abs(a.x - b.x) + std::abs(a.y - b.y);
-    }
     inline bool sortConnection(const Connection &lhs, const Connection &rhs) {
-        // sorting by distance to origin
        return lhs.src_ts < rhs.src_ts;
     }
 
+    void A_star(std::priority_queue<AstarNode, std::vector<AstarNode>, compare> *queue, StopID tgt,
+                std::vector<std::vector<int>> &adj_list, std::vector<Astar_dist>& node, int multiplier);
 
-    void A_star(priority_queue<AstarNode, vector<AstarNode>, compare> *queue, StopID tgt,
-                vector<vector<int>> &adj_list, std::vector<Astar_dist>& node, int multiplier);
+    void Astar_leaststop(std::priority_queue<AstarNode, std::vector<AstarNode>, compare_leaststop> *queue, StopID tgt,
+                        std::vector<std::vector<int>> &adj_list, std::vector<Astar_stops>& node);
 
-    void Astar_leaststop(priority_queue<AstarNode, vector<AstarNode>, compare_leaststop> *queue, StopID tgt,
-                        vector<vector<int>> &adj_list, std::vector<Astar_stops>& node);
-
-    void connection_scan(std::vector<int>&in_connections, std::vector<Time>&earliest_arrival, int tgt);
+    void connection_scan(std::vector<int>&track_connections, std::vector<Time>&earliest_arrival, int tgt,std::vector<Connection>& all_connections);
     bool sorted_ts = false;
 
     template <class AstarType>
-
     int intersection_node(std::vector<AstarType>& s_nodes, std::vector<AstarType>& t_nodes)
     {
         for (int i=0; i< V; i++) {

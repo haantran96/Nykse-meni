@@ -1210,6 +1210,7 @@ MainProgram::CmdResult MainProgram::cmd_journey_shortest_distance(std::ostream& 
     {
         output << "No journey found!" << endl;
     }
+
     else
     {
         auto [stop, route, dist] = steps.front();
